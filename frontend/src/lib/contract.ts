@@ -1,4 +1,3 @@
-// contract.ts
 import {
   Contract,
   TransactionBuilder,
@@ -12,100 +11,286 @@ import { kit } from "./wallet";
 
 export const CONTRACT_ID =
   "CBFCVRIAUNBRD5BIYX3AHP3RWMEKUQBN4L5GTLFJ4P76I2H6JMYB4PDF";
-const RPC_URL = "https://soroban-testnet.stellar.org";
+
+export const RPC_URL =
+  "https://soroban-testnet.stellar.org";
 
 export const server = new rpc.Server(RPC_URL);
+
 const contract = new Contract(CONTRACT_ID);
 
-export type TxStatus = "idle" | "pending" | "success" | "fail";
+export type TxStatus =
+  | "idle"
+  | "pending"
+  | "success"
+  | "fail";
 
+/**
+ * Menjalankan fungsi contract.
+ *
+ * Flow:
+ * 1. Ambil account
+ * 2. Build transaction
+ * 3. Simulate
+ * 4. Assemble resource
+ * 5. Wallet sign
+ * 6. Submit transaction
+ * 7. Poll sampai SUCCESS / FAILED
+ */
 export async function callContract(
   method: string,
   args: any[],
   sourcePublicKey: string
 ) {
-  const account = await server.getAccount(sourcePublicKey);
+  if (!sourcePublicKey) {
+    throw new Error("Wallet belum terhubung.");
+  }
+
+  const account =
+    await server.getAccount(sourcePublicKey);
 
   let tx = new TransactionBuilder(account, {
     fee: BASE_FEE,
     networkPassphrase: Networks.TESTNET,
   })
-    .addOperation(contract.call(method, ...args))
+    .addOperation(
+      contract.call(method, ...args)
+    )
     .setTimeout(30)
     .build();
 
-  // Simulasi dulu untuk hitung resource fee yang tepat
-  const simulated = await server.simulateTransaction(tx);
+  const simulated =
+    await server.simulateTransaction(tx);
+
   if (rpc.Api.isSimulationError(simulated)) {
-    throw new Error(simulated.error);
+    throw new Error(
+      `Simulation gagal: ${simulated.error}`
+    );
   }
 
-  tx = rpc.assembleTransaction(tx, simulated).build();
+  tx = rpc
+    .assembleTransaction(tx, simulated)
+    .build();
 
-  const { signedTxXdr } = await kit.signTransaction(tx.toXDR(), {
-    networkPassphrase: Networks.TESTNET,
-  });
+  const { signedTxXdr } =
+    await kit.signTransaction(tx.toXDR(), {
+      networkPassphrase: Networks.TESTNET,
+    });
 
-  const signedTx = TransactionBuilder.fromXDR(signedTxXdr, Networks.TESTNET);
+  if (!signedTxXdr) {
+    throw new Error(
+      "Wallet tidak mengembalikan transaksi yang sudah ditandatangani."
+    );
+  }
 
-  const sendResponse = await server.sendTransaction(signedTx);
+  const signedTx =
+    TransactionBuilder.fromXDR(
+      signedTxXdr,
+      Networks.TESTNET
+    );
+
+  const sendResponse =
+    await server.sendTransaction(signedTx);
 
   if (sendResponse.status === "ERROR") {
-    throw new Error("Transaksi ditolak jaringan Stellar.");
+    throw new Error(
+      "Transaksi ditolak oleh jaringan Stellar."
+    );
   }
 
-  // Polling status transaksi sampai selesai
-  let getResponse = await server.getTransaction(sendResponse.hash);
+  const txHash = sendResponse.hash;
+
+  let response =
+    await server.getTransaction(txHash);
+
   let attempts = 0;
-  while (getResponse.status === "NOT_FOUND" && attempts < 15) {
-    await new Promise((r) => setTimeout(r, 1500));
-    getResponse = await server.getTransaction(sendResponse.hash);
+  const maxAttempts = 20;
+
+  while (
+    response.status === "NOT_FOUND" &&
+    attempts < maxAttempts
+  ) {
+    await new Promise((resolve) =>
+      setTimeout(resolve, 1500)
+    );
+
+    response =
+      await server.getTransaction(txHash);
+
     attempts++;
   }
 
-  if (getResponse.status === "SUCCESS") {
-    const returnValue = getResponse.returnValue
-      ? scValToNative(getResponse.returnValue)
+  if (response.status === "SUCCESS") {
+    const result = response.returnValue
+      ? scValToNative(response.returnValue)
       : null;
-    return { hash: sendResponse.hash, result: returnValue };
-  } else {
-    throw new Error(
-      `Transaksi gagal dengan status: ${getResponse.status}`
-    );
+
+    return {
+      hash: txHash,
+      result,
+    };
   }
+
+  throw new Error(
+    `Transaksi gagal dengan status: ${response.status}`
+  );
 }
 
-export async function createGroup(owner: string, name: string) {
+/**
+ * Create Group
+ *
+ * Rust:
+ * create_group(
+ *     env: Env,
+ *     owner: Address,
+ *     name: String
+ * ) -> Group
+ */
+export async function createGroup(
+  owner: string,
+  name: string
+) {
+  if (!owner) {
+    throw new Error(
+      "Wallet belum terhubung."
+    );
+  }
+
+  if (!name.trim()) {
+    throw new Error(
+      "Nama group tidak boleh kosong."
+    );
+  }
+
   return callContract(
     "create_group",
-    [nativeToScVal(owner, { type: "address" }), nativeToScVal(name, { type: "string" })],
+    [
+      nativeToScVal(owner, {
+        type: "address",
+      }),
+
+      nativeToScVal(name.trim(), {
+        type: "string",
+      }),
+    ],
     owner
   );
 }
 
+/**
+ * Add Member
+ *
+ * Rust:
+ * add_member(
+ *     env: Env,
+ *     group_id: u64,
+ *     owner: Address,
+ *     member: Address,
+ *     share_amount: i128
+ * ) -> String
+ */
+export async function addMember(
+  groupId: bigint,
+  owner: string,
+  member: string,
+  shareAmount: bigint
+) {
+  if (!owner) {
+    throw new Error(
+      "Wallet owner belum terhubung."
+    );
+  }
+
+  if (!member) {
+    throw new Error(
+      "Alamat member wajib diisi."
+    );
+  }
+
+  if (groupId <= 0n) {
+    throw new Error(
+      "Group ID harus lebih besar dari 0."
+    );
+  }
+
+  if (shareAmount <= 0n) {
+    throw new Error(
+      "Share amount harus lebih besar dari 0."
+    );
+  }
+
+  return callContract(
+    "add_member",
+    [
+      nativeToScVal(groupId, {
+        type: "u64",
+      }),
+
+      nativeToScVal(owner, {
+        type: "address",
+      }),
+
+      nativeToScVal(member, {
+        type: "address",
+      }),
+
+      nativeToScVal(shareAmount, {
+        type: "i128",
+      }),
+    ],
+    owner
+  );
+}
+
+/**
+ * Pay Share
+ *
+ * Rust:
+ * pay_share(
+ *     env: Env,
+ *     group_id: u64,
+ *     member: Address,
+ *     amount: i128
+ * ) -> Result<String, SplitBillError>
+ */
 export async function payShare(
   groupId: bigint,
   member: string,
   amount: bigint
 ) {
+  if (!member) {
+    throw new Error(
+      "Wallet belum terhubung."
+    );
+  }
+
+  if (groupId <= 0n) {
+    throw new Error(
+      "Group ID harus lebih besar dari 0."
+    );
+  }
+
+  if (amount <= 0n) {
+    throw new Error(
+      "Amount harus lebih besar dari 0."
+    );
+  }
+
   return callContract(
     "pay_share",
     [
-      nativeToScVal(groupId, { type: "u64" }),
-      nativeToScVal(member, { type: "address" }),
-      nativeToScVal(amount, { type: "i128" }),
+      nativeToScVal(groupId, {
+        type: "u64",
+      }),
+
+      nativeToScVal(member, {
+        type: "address",
+      }),
+
+      nativeToScVal(amount, {
+        type: "i128",
+      }),
     ],
     member
   );
-}
-
-export async function getGroups() {
-  // Read-only call, tidak perlu sign — cukup simulate
-  const dummyAccount = await server.getAccount(
-    "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF"
-  ).catch(() => null);
-
-  // Untuk simplifikasi, gunakan simulateTransaction dengan source account manapun yang valid
-  // (di production sebaiknya pakai account connected user)
-  throw new Error("Implementasi getGroups menyesuaikan account yang connect");
 }
