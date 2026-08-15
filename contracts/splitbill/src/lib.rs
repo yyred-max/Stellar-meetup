@@ -1,7 +1,8 @@
 #![no_std]
 
 use soroban_sdk::{
-    contract, contractimpl, contracttype, symbol_short, Address, Env, String, Symbol, Vec,
+    contract, contracterror, contractimpl, contracttype, symbol_short, Address, Env, String,
+    Symbol, Vec,
 };
 
 #[contracttype]
@@ -21,6 +22,15 @@ pub struct Member {
     pub address: Address,
     pub share_amount: i128,
     pub has_paid: bool,
+}
+
+#[contracterror]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[repr(u32)]
+pub enum SplitBillError {
+    AlreadyPaid = 1,
+    NotAMember = 2,
+    IncorrectAmount = 3,
 }
 
 const GROUP_DATA: Symbol = symbol_short!("GROUPS");
