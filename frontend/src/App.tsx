@@ -1,5 +1,6 @@
 import { useState } from "react";
 import WalletConnect from "./components/WalletConnect";
+import PayShare from "./components/PayShare";
 
 function App() {
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
@@ -12,7 +13,10 @@ function App() {
       <WalletConnect onConnected={(addr) => setWalletAddress(addr)} />
 
       {walletAddress && (
-        <p>Wallet terhubung: {walletAddress}</p>
+        <>
+          <p>Wallet terhubung: {walletAddress}</p>
+          <PayShare walletAddress={walletAddress} />
+        </>
       )}
     </div>
   );
