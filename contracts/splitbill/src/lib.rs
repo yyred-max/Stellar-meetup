@@ -126,5 +126,24 @@ impl SplitBillContract {
 
     Ok(String::from_str(&env, "Pembayaran berhasil"))
 }
+pub fn get_members(env: Env, group_id: u64) -> Vec<Member> {
+        let members: Vec<Member> = env
+            .storage()
+            .instance()
+            .get(&MEMBER_DATA)
+            .unwrap_or(Vec::new(&env));
+
+        let mut result: Vec<Member> = Vec::new(&env);
+
+        for i in 0..members.len() {
+            let m = members.get(i).unwrap();
+
+            if m.group_id == group_id {
+                result.push_back(m);
+            }
+        }
+
+        result
+}
 }
 mod test;
