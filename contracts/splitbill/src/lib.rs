@@ -63,48 +63,68 @@ impl SplitBillContract {
     }
 
     pub fn pay_share(
-        env: Env,
-        group_id: u64,
-        member: Address,
-        amount: i128,
-    ) -> Result<String, SplitBillError> {
-        member.require_auth();
+    env: Env,
+    group_id: u64,
+    member: Address,
+    amount: i128,
+) -> Result<String, SplitBillError> {
+    member.require_auth();
 
-        let mut members: Vec<Member> = env
-            .storage()
-            .instance()
-            .get(&MEMBER_DATA)
-            .unwrap_or(Vec::new(&env));
+    let mut members: Vec<Member> = env
+        .storage()
+        .instance()
+        .get(&MEMBER_DATA)
+        .unwrap_or(Vec::new(&env));
 
-        let mut found_index: Option<u32> = None;
+    let mut found_index: Option<u32> = None;
 
-        for i in 0..members.len() {
-            let m = members.get(i).unwrap();
+    for i in 0..members.len() {
+        let m = members.get(i).unwrap();
 
-            if m.group_id == group_id && m.address == member {
-                found_index = Some(i);
-                break;
-            }
+        if m.group_id == group_id && m.address == member {
+            found_index = Some(i);
+            break;
         }
-
-        let index = found_index.ok_or(SplitBillError::NotAMember)?;
-        let mut member_data = members.get(index).unwrap();
-
-        if member_data.has_paid {
-            return Err(SplitBillError::AlreadyPaid);
-        }
-
-        if amount != member_data.share_amount {
-            return Err(SplitBillError::IncorrectAmount);
-        }
-
-        member_data.has_paid = true;
-        members.set(index, member_data);
-
-        env.storage().instance().set(&MEMBER_DATA, &members);
-
-        Ok(String::from_str(&env, "Pembayaran berhasil"))
     }
-}
 
+    let index = found_index.ok_or(SplitBillError::NotAMember)?;
+    let mut member_data = members.get(index).unwrap();
+
+    if member_data.has_paid {
+        return Err(SplitBillError::AlreadyPaid);
+    }
+
+    if amount != member_data.share_amount {
+        return Err(SplitBillError::IncorrectAmount);
+    }
+
+    member_data.has_paid = true;
+    members.set(index, member_data);
+
+    env.storage().instance().set(&MEMBER_DATA, &members);
+
+    let mut groups: Vec<Group> = env
+        .storage()
+        .instance()
+        .get(&GROUP_DATA)
+        .unwrap_or(Vec::new(&env));
+
+    for i in 0..groups.len() {
+        let mut g = groups.get(i).unwrap();
+
+        if g.id == group_id {
+            g.members_paid += 1;
+            groups.set(i, g);
+            break;
+        }
+    }
+
+    env.storage().instance().set(&GROUP_DATA, &groups);
+
+    env.events()
+        .publish((symbol_short!("m_paid"), group_id), (member, amount));
+
+    Ok(String::from_str(&env, "Pembayaran berhasil"))
+}
+}
 mod test;
