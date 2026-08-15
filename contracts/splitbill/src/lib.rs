@@ -49,29 +49,7 @@ impl SplitBillContract {
     }
 
     pub fn create_group(env: Env, owner: Address, name: String) -> Group {
-        owner.require_auth();
-
-        let mut groups: Vec<Group> = env
-            .storage()
-            .instance()
-            .get(&GROUP_DATA)
-            .unwrap_or(Vec::new(&env));
-
-        let group = Group {
-            id: env.prng().gen::<u64>(),
-            name,
-            owner: owner.clone(),
-            total_members: 0,
-            members_paid: 0,
-        };
-
-        groups.push_back(group.clone());
-        env.storage().instance().set(&GROUP_DATA, &groups);
-
-        env.events()
-            .publish((symbol_short!("g_create"), group.id), owner);
-
-        group
+        // kode Commit 4
     }
 
     pub fn add_member(
@@ -81,7 +59,16 @@ impl SplitBillContract {
         member: Address,
         share_amount: i128,
     ) -> String {
-        owner.require_auth();
+        // kode Commit 5
+    }
+
+    pub fn pay_share(
+        env: Env,
+        group_id: u64,
+        member: Address,
+        amount: i128,
+    ) -> Result<String, SplitBillError> {
+        member.require_auth();
 
         let mut members: Vec<Member> = env
             .storage()
@@ -89,38 +76,34 @@ impl SplitBillContract {
             .get(&MEMBER_DATA)
             .unwrap_or(Vec::new(&env));
 
-        let member_data = Member {
-            group_id,
-            address: member.clone(),
-            share_amount,
-            has_paid: false,
-        };
+        let mut found_index: Option<u32> = None;
 
-        members.push_back(member_data);
-        env.storage().instance().set(&MEMBER_DATA, &members);
+        for i in 0..members.len() {
+            let m = members.get(i).unwrap();
 
-        let mut groups: Vec<Group> = env
-            .storage()
-            .instance()
-            .get(&GROUP_DATA)
-            .unwrap_or(Vec::new(&env));
-
-        for i in 0..groups.len() {
-            let mut g = groups.get(i).unwrap();
-
-            if g.id == group_id {
-                g.total_members += 1;
-                groups.set(i, g);
+            if m.group_id == group_id && m.address == member {
+                found_index = Some(i);
                 break;
             }
         }
 
-        env.storage().instance().set(&GROUP_DATA, &groups);
+        let index = found_index.ok_or(SplitBillError::NotAMember)?;
+        let mut member_data = members.get(index).unwrap();
 
-        env.events()
-            .publish((symbol_short!("m_add"), group_id), member);
+        if member_data.has_paid {
+            return Err(SplitBillError::AlreadyPaid);
+        }
 
-        String::from_str(&env, "Member berhasil ditambahkan")
+        if amount != member_data.share_amount {
+            return Err(SplitBillError::IncorrectAmount);
+        }
+
+        member_data.has_paid = true;
+        members.set(index, member_data);
+
+        env.storage().instance().set(&MEMBER_DATA, &members);
+
+        Ok(String::from_str(&env, "Pembayaran berhasil"))
     }
 }
 
