@@ -63,6 +63,55 @@ impl SplitBillContract {
 
         group
     }
+
+    pub fn add_member(
+        env: Env,
+        group_id: u64,
+        owner: Address,
+        member: Address,
+        share_amount: i128,
+    ) -> String {
+        owner.require_auth();
+
+        let mut members: Vec<Member> = env
+            .storage()
+            .instance()
+            .get(&MEMBER_DATA)
+            .unwrap_or(Vec::new(&env));
+
+        let member_data = Member {
+            group_id,
+            address: member.clone(),
+            share_amount,
+            has_paid: false,
+        };
+
+        members.push_back(member_data);
+        env.storage().instance().set(&MEMBER_DATA, &members);
+
+        let mut groups: Vec<Group> = env
+            .storage()
+            .instance()
+            .get(&GROUP_DATA)
+            .unwrap_or(Vec::new(&env));
+
+        for i in 0..groups.len() {
+            let mut g = groups.get(i).unwrap();
+
+            if g.id == group_id {
+                g.total_members += 1;
+                groups.set(i, g);
+                break;
+            }
+        }
+
+        env.storage().instance().set(&GROUP_DATA, &groups);
+
+        env.events()
+            .publish((symbol_short!("m_add"), group_id), member);
+
+        String::from_str(&env, "Member berhasil ditambahkan")
+    }
 }
 
 mod test;
