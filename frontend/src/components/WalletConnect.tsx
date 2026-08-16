@@ -1,4 +1,3 @@
-// WalletConnect.tsx
 import { useState } from "react";
 import { kit } from "../lib/wallet";
 import { Server } from "@stellar/stellar-sdk/rpc";
@@ -6,23 +5,17 @@ import { Server } from "@stellar/stellar-sdk/rpc";
 const RPC_URL = "https://soroban-testnet.stellar.org";
 const server = new Server(RPC_URL);
 
-type WalletError = {
-  type: "not_found" | "rejected" | "insufficient_balance" | "unknown";
-  message: string;
-};
-
 interface WalletConnectProps {
   onConnected: (address: string) => void;
 }
 
 export default function WalletConnect({ onConnected }: WalletConnectProps) {
   const [address, setAddress] = useState<string | null>(null);
-  const [error, setError] = useState<WalletError | null>(null);
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   async function checkBalance(publicKey: string): Promise<boolean> {
     try {
-      // ✅ Cast ke any agar TypeScript tidak protes
       const account = (await server.getAccount(publicKey)) as any;
       const nativeBalance = account.balances?.find(
         (b: any) => b.asset_type === "native"
@@ -35,7 +28,7 @@ export default function WalletConnect({ onConnected }: WalletConnectProps) {
   }
 
   async function handleConnect() {
-    setError(null);
+    setErrorMsg(null);
     setLoading(true);
 
     try {
@@ -43,26 +36,21 @@ export default function WalletConnect({ onConnected }: WalletConnectProps) {
         onWalletSelected: async (option) => {
           try {
             kit.setWallet(option.id);
-
             const { address: publicKey } = await kit.getAddress();
 
             if (!publicKey) {
-              setError({
-                type: "not_found",
-                message:
-                  "Wallet tidak ditemukan. Pastikan kamu sudah install extension wallet (contoh: Freighter) dan sudah login.",
-              });
+              setErrorMsg(
+                "Wallet tidak ditemukan. Pastikan extension wallet sudah terinstall."
+              );
               setLoading(false);
               return;
             }
 
             const hasEnoughBalance = await checkBalance(publicKey);
             if (!hasEnoughBalance) {
-              setError({
-                type: "insufficient_balance",
-                message:
-                  "Saldo XLM kamu tidak cukup untuk melakukan transaksi di testnet. Silakan top-up lewat Friendbot.",
-              });
+              setErrorMsg(
+                "Saldo XLM tidak cukup. Top-up via Friendbot terlebih dahulu."
+              );
               setLoading(false);
               return;
             }
@@ -87,28 +75,19 @@ export default function WalletConnect({ onConnected }: WalletConnectProps) {
 
   function handleError(err: any) {
     const msg = String(err?.message || err || "").toLowerCase();
-
     if (msg.includes("reject") || msg.includes("declined") || msg.includes("cancel")) {
-      setError({
-        type: "rejected",
-        message: "Kamu menolak permintaan koneksi wallet. Coba lagi kalau mau lanjut.",
-      });
+      setErrorMsg("Koneksi ditolak. Coba lagi jika mau.");
     } else if (msg.includes("not found") || msg.includes("not installed")) {
-      setError({
-        type: "not_found",
-        message: "Wallet tidak ditemukan. Pastikan extension wallet sudah terinstall.",
-      });
+      setErrorMsg("Wallet tidak ditemukan. Pastikan extension sudah terinstall.");
     } else {
-      setError({
-        type: "unknown",
-        message: "Terjadi kesalahan saat menghubungkan wallet. Silakan coba lagi.",
-      });
+      setErrorMsg("Terjadi kesalahan. Coba lagi.");
     }
   }
 
   function handleDisconnect() {
     setAddress(null);
-    setError(null);
+    setErrorMsg(null);
+    onConnected(""); // memberitahu App bahwa wallet terputus
   }
 
   return (
@@ -126,11 +105,8 @@ export default function WalletConnect({ onConnected }: WalletConnectProps) {
         </div>
       )}
 
-      {error && (
-        <div className={`wallet-error wallet-error--${error.type}`}>
-          ⚠️ {error.message}
-        </div>
-      )}
+      {/* ✅ Error message kecil, bukan banner besar */}
+      {errorMsg && <p className="wallet-error-text">⚠️ {errorMsg}</p>}
     </div>
   );
 }

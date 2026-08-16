@@ -1,4 +1,7 @@
-// App.css
+/* =============================================
+   BASE & BACKGROUND
+   ============================================= */
+
 .app {
   min-height: 100vh;
   position: relative;
@@ -39,20 +42,19 @@
   background: #00d9b1;
 }
 
-/* NAVBAR */
+/* =============================================
+   NAVBAR
+   ============================================= */
 
 .navbar {
   position: relative;
   z-index: 5;
-
   max-width: 1180px;
   margin: auto;
   padding: 26px 24px;
-
   display: flex;
   justify-content: space-between;
   align-items: center;
-
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
@@ -65,23 +67,13 @@
 .brand-icon {
   width: 42px;
   height: 42px;
-
   display: grid;
   place-items: center;
-
   border-radius: 13px;
-
-  background: linear-gradient(
-    135deg,
-    #8d72ff,
-    #5b42d6
-  );
-
+  background: linear-gradient(135deg, #8d72ff, #5b42d6);
   font-size: 20px;
   font-weight: 800;
-
-  box-shadow:
-    0 0 30px rgba(124, 92, 255, 0.35);
+  box-shadow: 0 0 30px rgba(124, 92, 255, 0.35);
 }
 
 .brand h1 {
@@ -95,25 +87,27 @@
   font-size: 11px;
 }
 
-/* MAIN */
+/* =============================================
+   MAIN CONTAINER
+   ============================================= */
 
 .container {
   position: relative;
   z-index: 2;
-
   max-width: 1180px;
   margin: auto;
   padding: 70px 24px 30px;
 }
 
-/* HERO */
+/* =============================================
+   HERO SECTION
+   ============================================= */
 
 .hero {
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
   gap: 40px;
-
   margin-bottom: 45px;
 }
 
@@ -126,46 +120,38 @@
 
 .hero h2 {
   margin: 15px 0;
-
   font-size: clamp(42px, 7vw, 76px);
   line-height: 0.98;
   letter-spacing: -4px;
 }
 
 .hero h2 span {
-  background: linear-gradient(
-    90deg,
-    #9c87ff,
-    #62e7cf
-  );
-
+  background: linear-gradient(90deg, #9c87ff, #62e7cf);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 
-.hero p {
+/* Perbaikan kontras teks */
+.hero-description {
   max-width: 570px;
-
-  color: #898995;
+  color: #b0b8c8; /* lebih terang dari sebelumnya #898995 */
   font-size: 16px;
   line-height: 1.7;
 }
 
-/* NETWORK */
+/* =============================================
+   NETWORK CARD
+   ============================================= */
 
 .network-card {
   min-width: 210px;
-
   display: flex;
   align-items: center;
   gap: 12px;
-
   padding: 16px 18px;
-
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 16px;
-
   background: rgba(255, 255, 255, 0.035);
   backdrop-filter: blur(15px);
 }
@@ -194,19 +180,18 @@
   box-shadow: 0 0 12px rgba(53, 229, 179, 0.8);
 }
 
-/* WALLET */
+/* =============================================
+   WALLET BANNER
+   ============================================= */
 
 .wallet-banner {
   display: flex;
   justify-content: space-between;
   align-items: center;
-
   padding: 18px 20px;
   margin-bottom: 24px;
-
   border: 1px solid rgba(53, 229, 179, 0.15);
   border-radius: 18px;
-
   background: rgba(53, 229, 179, 0.035);
 }
 
@@ -233,18 +218,17 @@
 
 .wallet-network {
   padding: 7px 11px;
-
   border-radius: 8px;
-
   color: #61e7c8;
   background: rgba(53, 229, 179, 0.08);
-
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 1px;
 }
 
-/* DASHBOARD */
+/* =============================================
+   DASHBOARD GRID
+   ============================================= */
 
 .dashboard-grid {
   display: grid;
@@ -254,21 +238,12 @@
 
 .dashboard-card {
   position: relative;
-
   padding: 28px;
-
   border: 1px solid rgba(255, 255, 255, 0.07);
   border-radius: 22px;
-
   background:
-    linear-gradient(
-      145deg,
-      rgba(255, 255, 255, 0.055),
-      rgba(255, 255, 255, 0.018)
-    );
-
+    linear-gradient(145deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.018));
   backdrop-filter: blur(20px);
-
   transition:
     transform 0.2s ease,
     border-color 0.2s ease;
@@ -287,42 +262,33 @@
   position: absolute;
   top: 20px;
   right: 22px;
-
   color: rgba(255, 255, 255, 0.18);
-
   font-size: 12px;
   font-weight: 700;
 }
 
-/* CONNECT */
+/* =============================================
+   CONNECT CARD (BELUM TERHUBUNG)
+   ============================================= */
 
 .connect-card {
   max-width: 560px;
   margin: 60px auto;
-
   padding: 60px 30px;
-
   text-align: center;
-
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 25px;
-
   background: rgba(255, 255, 255, 0.035);
 }
 
 .connect-icon {
   width: 70px;
   height: 70px;
-
   display: grid;
   place-items: center;
-
   margin: auto;
-
   border-radius: 22px;
-
   background: rgba(124, 92, 255, 0.12);
-
   color: #9c87ff;
   font-size: 36px;
 }
@@ -332,66 +298,62 @@
   font-size: 24px;
 }
 
-.connect-card p {
-  margin: auto;
+/* Perbaikan kontras teks di connect card */
+.connect-description {
   max-width: 400px;
-
-  color: #777783;
+  margin: 0 auto 1.5rem;
+  color: #b0b8c8; /* lebih terang */
   line-height: 1.6;
 }
 
-/* FOOTER */
-
-footer {
+/* Wrapper agar tombol di connect card tidak melebar */
+.connect-cta-wrapper {
   display: flex;
-  justify-content: space-between;
-
-  padding: 35px 5px 10px;
-
-  color: #555560;
-  font-size: 11px;
+  justify-content: center;
 }
 
-/* RESPONSIVE */
+/* =============================================
+   FOOTER DIPERKUAT
+   ============================================= */
 
-@media (max-width: 760px) {
-  .navbar {
-    align-items: flex-start;
-    gap: 20px;
-  }
+.app-footer {
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
 
-  .hero {
-    display: block;
-  }
+.footer-links {
+  display: flex;
+  gap: 2rem;
+  font-size: 0.9rem;
+}
 
-  .network-card {
-    margin-top: 25px;
-  }
+.footer-links a {
+  color: rgba(255, 255, 255, 0.5);
+  text-decoration: none;
+  transition: color 0.2s;
+}
 
-  .hero h2 {
-    font-size: 48px;
-    letter-spacing: -2px;
-  }
+.footer-links a:hover {
+  color: rgba(255, 255, 255, 0.9);
+}
 
-  .dashboard-grid {
-    grid-template-columns: 1fr;
-  }
+.footer-brand {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.3);
+  display: flex;
+  gap: 1.5rem;
+}
 
-  .payment-card {
-    grid-column: auto;
-  }
+/* =============================================
+   KOMPONEN FORM (CreateGroup, AddMember, PayShare)
+   ============================================= */
 
-  .wallet-banner {
-    align-items: flex-start;
-    gap: 15px;
-  }
-
-  footer {
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .create-group h3,
+.create-group h3,
 .pay-share h3,
 .add-member h3 {
   margin: 0 0 22px;
@@ -405,15 +367,11 @@ footer {
   width: 100%;
   margin-bottom: 12px;
   padding: 13px 15px;
-
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 11px;
-
   outline: none;
-
   background: rgba(0, 0, 0, 0.25);
   color: #fff;
-
   transition:
     border-color 0.2s ease,
     background 0.2s ease;
@@ -431,19 +389,11 @@ footer {
 .add-member button {
   width: 100%;
   padding: 13px 18px;
-
   border: 0;
   border-radius: 11px;
-
-  background: linear-gradient(
-    135deg,
-    #8065ed,
-    #6044d5
-  );
-
+  background: linear-gradient(135deg, #8065ed, #6044d5);
   color: white;
   font-weight: 700;
-
   transition:
     transform 0.2s ease,
     opacity 0.2s ease;
@@ -467,7 +417,6 @@ footer {
 .add-member label {
   display: block;
   margin-bottom: 7px;
-
   color: #858591;
   font-size: 11px;
   font-weight: 600;
@@ -484,7 +433,6 @@ footer {
 .event-feed {
   margin-top: 30px;
   padding-top: 20px;
-
   border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
@@ -497,9 +445,73 @@ footer {
 .event-feed ul {
   margin: 0;
   padding-left: 18px;
-
   color: #6f6f7b;
   font-size: 11px;
   line-height: 1.8;
 }
+
+/* =============================================
+   RESPONSIVE (Mobile First)
+   ============================================= */
+
+@media (max-width: 760px) {
+  .navbar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 20px;
+  }
+
+  .hero {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 20px;
+  }
+
+  .hero h2 {
+    font-size: 48px;
+    letter-spacing: -2px;
+  }
+
+  .network-card {
+    margin-top: 10px;
+    min-width: unset;
+    width: 100%;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .payment-card {
+    grid-column: auto;
+  }
+
+  .wallet-banner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+  }
+
+  .app-footer {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.8rem;
+  }
+
+  .footer-links {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1rem;
+  }
+
+  .footer-brand {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3rem;
+  }
+
+  .connect-card {
+    padding: 40px 20px;
+    margin: 30px auto;
+  }
 }

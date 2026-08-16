@@ -22,6 +22,7 @@ function App() {
           </div>
         </div>
 
+        {/* Satu CTA utama — sama dengan yang di card bawah */}
         <WalletConnect
           onConnected={(address) => setWalletAddress(address)}
         />
@@ -38,7 +39,8 @@ function App() {
               <span>Pay smarter.</span>
             </h2>
 
-            <p>
+            {/* Kontras teks dinaikkan — tambahkan kelas untuk warna lebih terang */}
+            <p className="hero-description">
               Kelola tagihan bersama, tambahkan member, dan lakukan
               pembayaran secara transparan menggunakan Stellar.
             </p>
@@ -58,7 +60,6 @@ function App() {
             <section className="wallet-banner">
               <div className="wallet-status">
                 <div className="online-dot" />
-
                 <div>
                   <span>Connected Wallet</span>
                   <strong>
@@ -67,10 +68,7 @@ function App() {
                   </strong>
                 </div>
               </div>
-
-              <div className="wallet-network">
-                TESTNET
-              </div>
+              <div className="wallet-network">TESTNET</div>
             </section>
 
             <section className="dashboard-grid">
@@ -78,12 +76,10 @@ function App() {
                 <div className="card-number">01</div>
                 <CreateGroup walletAddress={walletAddress} />
               </div>
-
               <div className="dashboard-card">
                 <div className="card-number">02</div>
                 <AddMember walletAddress={walletAddress} />
               </div>
-
               <div className="dashboard-card payment-card">
                 <div className="card-number">03</div>
                 <PayShare walletAddress={walletAddress} />
@@ -92,20 +88,51 @@ function App() {
           </>
         ) : (
           <section className="connect-card">
-            <div className="connect-icon">◎</div>
-
+            {/* Icon wallet jelas, bukan lingkaran generik */}
+            <div className="connect-icon">💳</div>
             <h3>Connect your wallet</h3>
-
-            <p>
+            <p className="connect-description">
               Hubungkan wallet Stellar kamu untuk mulai membuat
               group dan melakukan pembayaran.
             </p>
+            {/* CTA yang sama — gunakan WalletConnect lagi */}
+            <div className="connect-cta-wrapper">
+              <WalletConnect
+                onConnected={(address) => setWalletAddress(address)}
+              />
+            </div>
           </section>
         )}
 
-        <footer>
-          <span>SplitBill</span>
-          <span>Built on Stellar Soroban</span>
+        {/* Footer diperkuat dengan link trust signal */}
+        <footer className="app-footer">
+          <div className="footer-links">
+            <a
+              href="https://github.com/yyred-max/Stellar-meetup"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              GitHub
+            </a>
+            <a
+              href="https://developers.stellar.org/docs/"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Dokumentasi Stellar
+            </a>
+            <a
+              href="https://stellar.org/"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Stellar.org
+            </a>
+          </div>
+          <div className="footer-brand">
+            <span>SplitBill</span>
+            <span>Built on Stellar Soroban</span>
+          </div>
         </footer>
       </main>
     </div>
