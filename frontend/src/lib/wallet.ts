@@ -5,8 +5,7 @@ import {
   FreighterModule,
   AlbedoModule,
   LobstrModule,
-  XbullModule,      // xBull wallet (ekstensi Chrome)
-  RabetModule,      // Rabet wallet (ekstensi Chrome)
+  xBullModule,      // ✅ perbaiki case menjadi xBullModule
 } from "@creit.tech/stellar-wallets-kit";
 
 export const kit: StellarWalletsKit = new StellarWalletsKit({
@@ -16,7 +15,6 @@ export const kit: StellarWalletsKit = new StellarWalletsKit({
     new FreighterModule(),   // Freighter (ekstensi Chrome)
     new AlbedoModule(),      // Albedo (web-based & ekstensi)
     new LobstrModule(),      // LOBSTR (ekstensi Chrome)
-    new XbullModule(),       // xBull (ekstensi Chrome)
-    new RabetModule(),       // Rabet (ekstensi Chrome)
+    new xBullModule(),       // xBull (ekstensi Chrome) — perbaiki case
   ],
 });
