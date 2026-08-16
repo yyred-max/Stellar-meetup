@@ -1,13 +1,18 @@
-// wallet.ts
 import {
   StellarWalletsKit,
   WalletNetwork,
-  allowAllModules,
   FREIGHTER_ID,
+  FreighterModule,
+  AlbedoModule,
+  LobstrModule,
 } from "@creit.tech/stellar-wallets-kit";
 
 export const kit: StellarWalletsKit = new StellarWalletsKit({
   network: WalletNetwork.TESTNET,
   selectedWalletId: FREIGHTER_ID,
-  modules: allowAllModules(),
+  modules: [
+    new FreighterModule(),
+    new AlbedoModule(),
+    new LobstrModule(),
+  ],
 });
