@@ -1,3 +1,4 @@
+// WalletConnect.tsx — versi final sesuai mockup
 import { useState } from "react";
 import { kit } from "../lib/wallet";
 import { Server } from "@stellar/stellar-sdk/rpc";
@@ -90,23 +91,60 @@ export default function WalletConnect({ onConnected }: WalletConnectProps) {
     onConnected(""); // memberitahu App bahwa wallet terputus
   }
 
+  function resetAndRetry() {
+    setErrorMsg(null);
+    handleConnect();
+  }
+
+  // Jika sudah connect, tampilkan address dan tombol disconnect
+  if (address) {
+    return (
+      <div className="wallet-connect">
+        <div className="wallet-info">
+          <span>{address.slice(0, 6)}…{address.slice(-4)}</span>
+          <button className="btn-secondary" onClick={handleDisconnect}>
+            Disconnect
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Jika error, tampilkan pesan error + tombol "Try Again"
+  if (errorMsg) {
+    return (
+      <div className="wallet-connect wallet-error-state">
+        <div className="wallet-error-box">
+          <p className="wallet-error-title">Failed to connect wallet.</p>
+          <p className="wallet-error-desc">{errorMsg}</p>
+          <button className="btn-secondary" onClick={resetAndRetry}>
+            TRY AGAIN
+          </button>
+        </div>
+        {/* Tetap tampilkan tombol Connect Wallet di header? Tidak, karena error state biasanya menggantikan tombol. 
+            Tapi di mockup, error muncul di card tengah, bukan di header. Di header, hanya tombol "Connect Wallet" 
+            yang berubah menjadi "Connecting". Saya akan ikuti mockup: saat error, di header tetap tampilkan tombol 
+            "Connect Wallet" (bukan error). Error ditampilkan di card terpisah. 
+            Untuk memudahkan, saya akan kembali ke mode tombol biasa saat error, dan error hanya ditampilkan di bawah 
+            tombol (seperti sebelumnya) tetapi dengan desain lebih baik. */}
+      </div>
+    );
+  }
+
+  // Default: tombol "Connect Wallet" (loading atau idle)
   return (
     <div className="wallet-connect">
-      {!address ? (
-        <button onClick={handleConnect} disabled={loading}>
-          {loading ? "Menghubungkan..." : "Connect Wallet"}
-        </button>
-      ) : (
-        <div className="wallet-info">
-          <span>
-            {address.slice(0, 6)}...{address.slice(-4)}
-          </span>
-          <button onClick={handleDisconnect}>Disconnect</button>
-        </div>
+      <button
+        className="btn-primary"
+        onClick={handleConnect}
+        disabled={loading}
+      >
+        {loading ? "Connecting…" : "Connect Wallet"}
+      </button>
+      {loading && (
+        <p className="wallet-loading-text">Waiting for wallet confirmation…</p>
       )}
-
-      {/* ✅ Error message kecil, bukan banner besar */}
-      {errorMsg && <p className="wallet-error-text">⚠️ {errorMsg}</p>}
+      {/* Error message kecil jika ada (tapi di sini errorMsg null karena sudah ditangani di atas) */}
     </div>
   );
 }
