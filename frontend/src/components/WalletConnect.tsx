@@ -1,7 +1,7 @@
 // WalletConnect.tsx
 import { useState } from "react";
 import { kit } from "../lib/wallet";
-import { Server } from "@stellar/stellar-sdk/rpc";
+import { Server, GetAccountResponse } from "@stellar/stellar-sdk/rpc";
 
 const RPC_URL = "https://soroban-testnet.stellar.org";
 const server = new Server(RPC_URL);
@@ -22,7 +22,8 @@ export default function WalletConnect({ onConnected }: WalletConnectProps) {
 
   async function checkBalance(publicKey: string): Promise<boolean> {
     try {
-      const account = await server.getAccount(publicKey);
+      // ✅ Perbaikan: cast hasil response ke GetAccountResponse
+      const account = (await server.getAccount(publicKey)) as GetAccountResponse;
       const nativeBalance = account.balances?.find(
         (b: any) => b.asset_type === "native"
       );
