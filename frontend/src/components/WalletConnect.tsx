@@ -22,16 +22,13 @@ export default function WalletConnect({ onConnected }: WalletConnectProps) {
 
   async function checkBalance(publicKey: string): Promise<boolean> {
     try {
-      // ✅ Perbaikan: cast hasil response ke GetAccountResponse
       const account = (await server.getAccount(publicKey)) as GetAccountResponse;
       const nativeBalance = account.balances?.find(
         (b: any) => b.asset_type === "native"
       );
       const balance = nativeBalance ? parseFloat(nativeBalance.balance) : 0;
-      // Minimal saldo aman untuk base reserve + fee (buffer 2 XLM)
       return balance >= 2;
     } catch {
-      // Kalau akun belum pernah didanai sama sekali (belum ada di ledger)
       return false;
     }
   }
