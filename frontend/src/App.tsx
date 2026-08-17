@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import WalletConnect, { WalletConnectHandle, WalletStatus } from "./components/WalletConnect";
+import Dashboard from "./components/Dashboard";
 import {
   IconWallet,
   IconCheck,
@@ -29,6 +30,7 @@ function App() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [showErrorToast, setShowErrorToast] = useState(false);
   const [isDemo, setIsDemo] = useState(false);
+  const [page, setPage] = useState<"landing" | "dashboard">("landing");
 
   const demoGroup = {
     name: "Trip to Bali",
@@ -63,6 +65,18 @@ function App() {
   function goIdle() {
     setShowErrorToast(false);
     setWalletStatus("idle");
+  }
+
+  if (page === "dashboard" && walletStatus === "connected") {
+    return (
+      <Dashboard
+        address={address}
+        onDisconnect={() => {
+          walletRef.current?.disconnect();
+          setPage("landing");
+        }}
+      />
+    );
   }
 
   return (
@@ -123,7 +137,9 @@ function App() {
                 </div>
               </div>
               <div className="connected-actions">
-                <button className="btn-primary">Open Dashboard</button>
+                <button className="btn-primary" onClick={() => setPage("dashboard")}>
+                  Open Dashboard
+                </button>
                 <button
                   className="btn-secondary"
                   onClick={() => walletRef.current?.disconnect()}
