@@ -1,5 +1,6 @@
 // src/components/Groups.tsx
 import { useMemo, useState } from "react";
+import CreateGroupModal from "./CreateGroupModal";
 import { IconPlus, IconLogout, IconSearch, IconChevronDown, IconUsers } from "./Icons";
 
 interface GroupsProps {
@@ -31,6 +32,7 @@ export default function Groups({ address, onDisconnect, onGoHome, onGoActivity }
   const tab: "Dashboard" | "Groups" | "Activity" = "Groups";
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"All Groups" | Status>("All Groups");
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   const filtered = useMemo(() => {
     return allGroups.filter((g) => {
@@ -110,7 +112,7 @@ export default function Groups({ address, onDisconnect, onGoHome, onGoActivity }
                 <IconChevronDown />
               </div>
 
-              <button className="btn-primary btn-new-group">
+              <button className="btn-primary btn-new-group" onClick={() => setShowCreateModal(true)}>
                 <IconPlus /> New Group
               </button>
             </div>
@@ -178,6 +180,14 @@ export default function Groups({ address, onDisconnect, onGoHome, onGoActivity }
           </a>
         </div>
       </footer>
+
+      {showCreateModal && (
+        <CreateGroupModal
+          address={address}
+          onClose={() => setShowCreateModal(false)}
+          onViewGroup={() => setShowCreateModal(false)}
+        />
+      )}
     </div>
   );
 }

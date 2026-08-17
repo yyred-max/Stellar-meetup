@@ -1,4 +1,6 @@
 // src/components/Dashboard.tsx
+import { useState } from "react";
+import CreateGroupModal from "./CreateGroupModal";
 import {
   IconPlus,
   IconLogout,
@@ -76,6 +78,7 @@ function getGreeting() {
 
 export default function Dashboard({ address, userName = "Yuli", onDisconnect, onGoGroups, onGoActivity }: DashboardProps) {
   const tab: "Dashboard" | "Groups" | "Activity" = "Dashboard";
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   return (
     <div className="dashboard">
@@ -123,7 +126,7 @@ export default function Dashboard({ address, userName = "Yuli", onDisconnect, on
               </p>
               <p className="greeting-sub">Manage shared bills easily and transparently using Stellar.</p>
             </div>
-            <button className="btn-primary btn-create-group">
+            <button className="btn-primary btn-create-group" onClick={() => setShowCreateModal(true)}>
               <IconPlus /> Create Group
             </button>
           </section>
@@ -210,6 +213,17 @@ export default function Dashboard({ address, userName = "Yuli", onDisconnect, on
               </div>
             </div>
           </section>
+
+      {showCreateModal && (
+        <CreateGroupModal
+          address={address}
+          onClose={() => setShowCreateModal(false)}
+          onViewGroup={() => {
+            setShowCreateModal(false);
+            onGoGroups();
+          }}
+        />
+      )}
     </div>
   );
 }
