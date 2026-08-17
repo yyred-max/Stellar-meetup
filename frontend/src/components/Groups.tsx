@@ -27,7 +27,7 @@ const allGroups: GroupItem[] = [
 ];
 
 export default function Groups({ address, onDisconnect, onGoHome }: GroupsProps) {
-  const [tab, setTab] = useState<"Home" | "Groups" | "Activity">("Groups");
+  const [tab, setTab] = useState<"Dashboard" | "Groups" | "Activity">("Groups");
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"All Groups" | Status>("All Groups");
 
@@ -51,11 +51,11 @@ export default function Groups({ address, onDisconnect, onGoHome }: GroupsProps)
         </div>
 
         <nav className="dashboard-tabs">
-          {(["Home", "Groups", "Activity"] as const).map((t) => (
+          {(["Dashboard", "Groups", "Activity"] as const).map((t) => (
             <button
               key={t}
               className={`dashboard-tab ${tab === t ? "active" : ""}`}
-              onClick={() => (t === "Home" ? onGoHome() : setTab(t))}
+              onClick={() => (t === "Dashboard" ? onGoHome() : setTab(t))}
             >
               {t}
             </button>
