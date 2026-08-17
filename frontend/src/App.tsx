@@ -121,13 +121,14 @@ function App() {
 
   if (page === "groups" && walletStatus === "connected") {
     return (
-      <Groups
-        address={address}
-        groups={groups}               // ← source data
-        onDisconnect={handleFullDisconnect}
-        onGoHome={() => setPage("dashboard")}
-        onGoActivity={() => setPage("activity")}
-      />
+     <Groups
+      address={address}
+      groups={groups}
+      onAddGroup={addGroup}         // ✅ tambahkan ini
+      onDisconnect={handleFullDisconnect}
+      onGoHome={() => setPage("dashboard")}
+      onGoActivity={() => setPage("activity")}
+    />
     );
   }
 
@@ -135,7 +136,6 @@ function App() {
     return (
       <ActivityPage
         address={address}
-        groups={groups}               // ← source data (opsional)
         onDisconnect={handleFullDisconnect}
         onGoDashboard={() => setPage("dashboard")}
         onGoGroups={() => setPage("groups")}
