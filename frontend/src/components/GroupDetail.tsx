@@ -186,14 +186,14 @@ export default function GroupDetail({
       <footer className="app-footer groups-footer">
         <span className="footer-brand">Built on Stellar Soroban</span>
         <div className="footer-links">
-          
+          <a
             href="https://github.com/yyred-max/Stellar-meetup"
             target="_blank"
             rel="noopener noreferrer"
           >
             Source Code
           </a>
-          
+          <a
             href="https://developers.stellar.org/docs/"
             target="_blank"
             rel="noopener noreferrer"
