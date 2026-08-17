@@ -1,11 +1,11 @@
 // src/components/WalletConnect.tsx
 import { forwardRef, useImperativeHandle, useState } from "react";
 import { kit } from "../lib/wallet";
-import { Server } from "@stellar/stellar-sdk/rpc";
+import { Horizon } from "@stellar/stellar-sdk";
 import { IconWallet, IconSpinner } from "./Icons";
 
-const RPC_URL = "https://soroban-testnet.stellar.org";
-const server = new Server(RPC_URL);
+const HORIZON_URL = "https://horizon-testnet.stellar.org";
+const server = new Horizon.Server(HORIZON_URL);
 
 export type WalletStatus = "idle" | "connecting" | "connected" | "error";
 
@@ -33,13 +33,17 @@ const WalletConnect = forwardRef<WalletConnectHandle, WalletConnectProps>(
 
     async function checkBalance(publicKey: string): Promise<boolean> {
       try {
-        const account = (await server.getAccount(publicKey)) as any;
-        const nativeBalance = account.balances?.find(
+        // Gunakan Horizon untuk mendapatkan data akun
+        const account = await server.loadAccount(publicKey);
+        // Cari saldo native (XLM)
+        const nativeBalance = account.balances.find(
           (b: any) => b.asset_type === "native"
         );
         const balance = nativeBalance ? parseFloat(nativeBalance.balance) : 0;
+        console.log(`[checkBalance] Balance for ${publicKey}: ${balance} XLM`);
         return balance >= 2;
-      } catch {
+      } catch (error) {
+        console.error("[checkBalance] Error:", error);
         return false;
       }
     }
