@@ -8,25 +8,38 @@ import {
   IconUserPlus,
 } from "./Icons";
 
+// ============================================================
+//  TIPE DATA (import dari App atau definisikan ulang)
+// ============================================================
+export interface Member {
+  address: string;
+  share: number;
+  paid: boolean;
+}
+
+export interface Group {
+  id: string;
+  name: string;
+  owner: string;
+  totalShare: number;
+  members: Member[];
+}
+
+// ============================================================
+//  PROPS DASHBOARD
+// ============================================================
 interface DashboardProps {
   address: string | null;
-  userName?: string;
+  groups: Group[];
+  onAddGroup: (group: Group) => void;
   onDisconnect: () => void;
   onGoGroups: () => void;
   onGoActivity: () => void;
 }
 
-type GroupStatus = { paid: number; pending: number; completed: boolean };
-
-interface Group {
-  name: string;
-  members: number;
-  total: number;
-  yourShare: number;
-  status: GroupStatus;
-  percent: number;
-}
-
+// ============================================================
+//  DUMMY ACTIVITY (placeholder, tetap karena belum ada event)
+// ============================================================
 interface Activity {
   icon: "pay" | "add";
   title: string;
@@ -34,34 +47,7 @@ interface Activity {
   time: string;
 }
 
-const groups: Group[] = [
-  {
-    name: "Dinner at Surabaya",
-    members: 5,
-    total: 125.0,
-    yourShare: 25.0,
-    status: { paid: 3, pending: 2, completed: false },
-    percent: 60,
-  },
-  {
-    name: "Weekend Trip",
-    members: 4,
-    total: 240.0,
-    yourShare: 60.0,
-    status: { paid: 2, pending: 2, completed: false },
-    percent: 50,
-  },
-  {
-    name: "Office Lunch",
-    members: 6,
-    total: 90.0,
-    yourShare: 15.0,
-    status: { paid: 6, pending: 0, completed: true },
-    percent: 100,
-  },
-];
-
-const activities: Activity[] = [
+const dummyActivities: Activity[] = [
   { icon: "pay", title: "Yuliana paid 25 XLM", sub: "Dinner at Surabaya • 2 mins ago", time: "" },
   { icon: "add", title: "You added Rizky", sub: "Weekend Trip • 15 mins ago", time: "" },
   { icon: "add", title: 'You created "Office Lunch"', sub: "Today, 09:42", time: "" },
@@ -76,9 +62,48 @@ function getGreeting() {
   return "Good night";
 }
 
-export default function Dashboard({ address, userName = "Yuli", onDisconnect, onGoGroups, onGoActivity }: DashboardProps) {
+export default function Dashboard({
+  address,
+  groups,
+  onAddGroup,
+  onDisconnect,
+  onGoGroups,
+  onGoActivity,
+}: DashboardProps) {
   const tab: "Dashboard" | "Groups" | "Activity" = "Dashboard";
   const [showCreateModal, setShowCreateModal] = useState(false);
+
+  // === HITUNG STATISTIK DARI GROUPS PROP ===
+  const totalGroups = groups.length;
+  let totalMembers = 0;
+  let totalOutstanding = 0;
+  let totalPaid = 0;
+
+  groups.forEach((g) => {
+    totalMembers += g.members.length;
+    g.members.forEach((m) => {
+      if (m.paid) {
+        totalPaid += m.share;
+      } else {
+        totalOutstanding += m.share;
+      }
+    });
+  });
+
+  const userName = address ? address.slice(0, 6) : "Yuli";
+
+  // === HANDLER SAAT GROUP BERHASIL DIBUAT ===
+  const handleGroupCreated = (data: { name: string; hash: string }) => {
+    const newGroup: Group = {
+      id: data.hash,
+      name: data.name,
+      owner: address!,
+      totalShare: 0,
+      members: [],
+    };
+    onAddGroup(newGroup);
+    setShowCreateModal(false);
+  };
 
   return (
     <div className="dashboard">
@@ -98,7 +123,7 @@ export default function Dashboard({ address, userName = "Yuli", onDisconnect, on
               className={`dashboard-tab ${tab === t ? "active" : ""}`}
               onClick={() => {
                 if (t === "Groups") onGoGroups();
-                if (t === "Activity") onGoActivity();
+                else if (t === "Activity") onGoActivity();
               }}
             >
               {t}
@@ -119,105 +144,122 @@ export default function Dashboard({ address, userName = "Yuli", onDisconnect, on
       </header>
 
       {/* ===== GREETING ===== */}
-          <section className="dashboard-greeting">
-            <div>
-              <p className="greeting-title">
-                {getGreeting()}, {userName} 👋
-              </p>
-              <p className="greeting-sub">Manage shared bills easily and transparently using Stellar.</p>
-            </div>
-            <button className="btn-primary btn-create-group" onClick={() => setShowCreateModal(true)}>
-              <IconPlus /> Create Group
-            </button>
-          </section>
+      <section className="dashboard-greeting">
+        <div>
+          <p className="greeting-title">
+            {getGreeting()}, {userName} 👋
+          </p>
+          <p className="greeting-sub">
+            Manage shared bills easily and transparently using Stellar.
+          </p>
+        </div>
+        <button className="btn-primary btn-create-group" onClick={() => setShowCreateModal(true)}>
+          <IconPlus /> Create Group
+        </button>
+      </section>
 
-          {/* ===== STAT CARDS ===== */}
-          <section className="stat-grid">
-            <div className="stat-card">
-              <span className="stat-label">TOTAL GROUPS</span>
-              <strong className="stat-value">04</strong>
-            </div>
-            <div className="stat-card">
-              <span className="stat-label">TOTAL MEMBERS</span>
-              <strong className="stat-value">12</strong>
-            </div>
-            <div className="stat-card outstanding">
-              <span className="stat-label">TOTAL OUTSTANDING</span>
-              <strong className="stat-value">24.50 XLM</strong>
-            </div>
-            <div className="stat-card paid">
-              <span className="stat-label">TOTAL PAID</span>
-              <strong className="stat-value">68.20 XLM</strong>
-            </div>
-          </section>
+      {/* ===== STAT CARDS (dinamis) ===== */}
+      <section className="stat-grid">
+        <div className="stat-card">
+          <span className="stat-label">TOTAL GROUPS</span>
+          <strong className="stat-value">{totalGroups}</strong>
+        </div>
+        <div className="stat-card">
+          <span className="stat-label">TOTAL MEMBERS</span>
+          <strong className="stat-value">{totalMembers}</strong>
+        </div>
+        <div className="stat-card outstanding">
+          <span className="stat-label">TOTAL OUTSTANDING</span>
+          <strong className="stat-value">{totalOutstanding.toFixed(2)} XLM</strong>
+        </div>
+        <div className="stat-card paid">
+          <span className="stat-label">TOTAL PAID</span>
+          <strong className="stat-value">{totalPaid.toFixed(2)} XLM</strong>
+        </div>
+      </section>
 
-          {/* ===== GROUPS + ACTIVITY ===== */}
-          <section className="dashboard-content">
-            <div className="dashboard-groups">
-              <h2>Your Groups</h2>
-              <div className="group-list">
-                {groups.map((g) => (
-                  <div className="group-card" key={g.name}>
+      {/* ===== GROUPS LIST + ACTIVITY FEED ===== */}
+      <section className="dashboard-content">
+        <div className="dashboard-groups">
+          <h2>Your Groups</h2>
+          {groups.length === 0 ? (
+            <p className="empty-state">No groups yet. Create your first group!</p>
+          ) : (
+            <div className="group-list">
+              {groups.map((g) => {
+                const total = g.members.length;
+                const paid = g.members.filter((m) => m.paid).length;
+                const percent = total > 0 ? (paid / total) * 100 : 0;
+                const completed = total > 0 && paid === total;
+
+                return (
+                  <div className="group-card" key={g.id}>
                     <div className="group-card-top">
                       <div>
                         <span className="group-name">
                           {g.name}
-                          {g.status.completed && <span className="badge-completed">Completed</span>}
+                          {completed && <span className="badge-completed">Completed</span>}
                         </span>
                         <span className="group-meta">
-                          {g.members} members • Total: {g.total.toFixed(2)} XLM
+                          {total} members • Total: {g.totalShare.toFixed(2)} XLM
                         </span>
                       </div>
                       <div className="group-share">
                         <span>Your Share</span>
-                        <strong className={g.status.completed ? "share-paid" : "share-pending"}>
-                          {g.yourShare.toFixed(2)} XLM
+                        <strong className={completed ? "share-paid" : "share-pending"}>
+                          {(g.totalShare / (total || 1)).toFixed(2)} XLM
                         </strong>
                       </div>
                     </div>
 
                     <div className="group-status-row">
                       <span>
-                        Status: {g.status.paid} Paid
-                        {g.status.pending > 0 && `, ${g.status.pending} Pending`}
+                        Status: {paid} Paid
+                        {total - paid > 0 && `, ${total - paid} Pending`}
                       </span>
-                      <span>{g.percent}%</span>
+                      <span>{Math.round(percent)}%</span>
                     </div>
                     <div className="progress-track">
                       <div
-                        className={`progress-fill ${g.percent === 100 ? "is-complete" : ""}`}
-                        style={{ width: `${g.percent}%` }}
+                        className={`progress-fill ${percent === 100 ? "is-complete" : ""}`}
+                        style={{ width: `${percent}%` }}
                       />
                     </div>
 
-                    <button className="btn-secondary btn-view-group">View Group</button>
+                    <button className="btn-secondary btn-view-group" onClick={onGoGroups}>
+                      View Group
+                    </button>
                   </div>
-                ))}
-              </div>
+                );
+              })}
             </div>
+          )}
+        </div>
 
-            <div className="dashboard-activity">
-              <h2>Recent Activity</h2>
-              <div className="activity-feed">
-                {activities.map((a, i) => (
-                  <div className="activity-item" key={i}>
-                    <span className={`activity-icon ${a.icon}`}>
-                      {a.icon === "pay" ? <IconCreditCard /> : <IconUserPlus />}
-                    </span>
-                    <div>
-                      <p className="activity-title">{a.title}</p>
-                      <p className="activity-sub">{a.sub}</p>
-                    </div>
-                  </div>
-                ))}
+        <div className="dashboard-activity">
+          <h2>Recent Activity</h2>
+          <div className="activity-feed">
+            {dummyActivities.map((a, i) => (
+              <div className="activity-item" key={i}>
+                <span className={`activity-icon ${a.icon}`}>
+                  {a.icon === "pay" ? <IconCreditCard /> : <IconUserPlus />}
+                </span>
+                <div>
+                  <p className="activity-title">{a.title}</p>
+                  <p className="activity-sub">{a.sub}</p>
+                </div>
               </div>
-            </div>
-          </section>
+            ))}
+          </div>
+        </div>
+      </section>
 
+      {/* ===== MODAL CREATE GROUP ===== */}
       {showCreateModal && (
         <CreateGroupModal
           address={address}
           onClose={() => setShowCreateModal(false)}
+          onSuccess={handleGroupCreated}
           onViewGroup={() => {
             setShowCreateModal(false);
             onGoGroups();

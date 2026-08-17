@@ -3,8 +3,30 @@ import { useMemo, useState } from "react";
 import CreateGroupModal from "./CreateGroupModal";
 import { IconPlus, IconLogout, IconSearch, IconChevronDown, IconUsers } from "./Icons";
 
+// ============================================================
+//  TIPE DATA (sama dengan Dashboard)
+// ============================================================
+export interface Member {
+  address: string;
+  share: number;
+  paid: boolean;
+}
+
+export interface Group {
+  id: string;
+  name: string;
+  owner: string;
+  totalShare: number;
+  members: Member[];
+}
+
+// ============================================================
+//  PROPS
+// ============================================================
 interface GroupsProps {
   address: string | null;
+  groups: Group[];
+  onAddGroup: (group: Group) => void;
   onDisconnect: () => void;
   onGoHome: () => void;
   onGoActivity: () => void;
@@ -12,35 +34,62 @@ interface GroupsProps {
 
 type Status = "Active" | "Pending" | "Completed";
 
-interface GroupItem {
-  name: string;
-  status: Status;
-  members: number;
-  total: number;
-  share: number;
-  percent: number;
-}
-
-const allGroups: GroupItem[] = [
-  { name: "Dinner at Surabaya", status: "Active", members: 5, total: 250, share: 50, percent: 60 },
-  { name: "Weekend Trip", status: "Pending", members: 8, total: 1200, share: 150, percent: 25 },
-  { name: "Office Lunch", status: "Completed", members: 4, total: 120, share: 30, percent: 100 },
-  { name: "Monthly Rent", status: "Active", members: 3, total: 4500, share: 1500, percent: 85 },
-];
-
-export default function Groups({ address, onDisconnect, onGoHome, onGoActivity }: GroupsProps) {
+export default function Groups({
+  address,
+  groups,
+  onAddGroup,
+  onDisconnect,
+  onGoHome,
+  onGoActivity,
+}: GroupsProps) {
   const tab: "Dashboard" | "Groups" | "Activity" = "Groups";
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"All Groups" | Status>("All Groups");
   const [showCreateModal, setShowCreateModal] = useState(false);
 
+  // ===== KOMPUTASI DATA DARI GROUPS PROP =====
+  const groupItems = useMemo(() => {
+    return groups.map((g) => {
+      const totalMembers = g.members.length;
+      const paid = g.members.filter((m) => m.paid).length;
+      const percent = totalMembers > 0 ? (paid / totalMembers) * 100 : 0;
+      const status: Status =
+        percent === 100 ? "Completed" : percent > 0 ? "Active" : "Pending";
+      const yourShare = totalMembers > 0 ? g.totalShare / totalMembers : 0;
+
+      return {
+        id: g.id,
+        name: g.name,
+        status,
+        members: totalMembers,
+        total: g.totalShare,
+        share: yourShare,
+        percent,
+      };
+    });
+  }, [groups]);
+
+  // ===== FILTER & SEARCH =====
   const filtered = useMemo(() => {
-    return allGroups.filter((g) => {
+    return groupItems.filter((g) => {
       const matchesSearch = g.name.toLowerCase().includes(search.toLowerCase());
       const matchesFilter = filter === "All Groups" || g.status === filter;
       return matchesSearch && matchesFilter;
     });
-  }, [search, filter]);
+  }, [search, filter, groupItems]);
+
+  // ===== HANDLER CREATE GROUP =====
+  const handleGroupCreated = (data: { name: string; hash: string }) => {
+    const newGroup: Group = {
+      id: data.hash,
+      name: data.name,
+      owner: address!,
+      totalShare: 0,
+      members: [],
+    };
+    onAddGroup(newGroup);
+    setShowCreateModal(false);
+  };
 
   return (
     <div className="dashboard groups-page">
@@ -60,7 +109,7 @@ export default function Groups({ address, onDisconnect, onGoHome, onGoActivity }
               className={`dashboard-tab ${tab === t ? "active" : ""}`}
               onClick={() => {
                 if (t === "Dashboard") onGoHome();
-                if (t === "Activity") onGoActivity();
+                else if (t === "Activity") onGoActivity();
               }}
             >
               {t}
@@ -81,92 +130,94 @@ export default function Groups({ address, onDisconnect, onGoHome, onGoActivity }
       </header>
 
       {/* ===== HEADER + CONTROLS ===== */}
-          <section className="groups-header">
-            <div>
-              <h1 className="groups-title">Your Groups</h1>
-              <p className="groups-sub">Manage and track all your shared expenses.</p>
-            </div>
+      <section className="groups-header">
+        <div>
+          <h1 className="groups-title">Your Groups</h1>
+          <p className="groups-sub">Manage and track all your shared expenses.</p>
+        </div>
 
-            <div className="groups-controls">
-              <div className="groups-search">
-                <IconSearch />
-                <input
-                  type="text"
-                  placeholder="Search groups..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+        <div className="groups-controls">
+          <div className="groups-search">
+            <IconSearch />
+            <input
+              type="text"
+              placeholder="Search groups..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+
+          <div className="groups-select-wrap">
+            <select
+              className="groups-select"
+              value={filter}
+              onChange={(e) => setFilter(e.target.value as typeof filter)}
+            >
+              <option>All Groups</option>
+              <option>Active</option>
+              <option>Pending</option>
+              <option>Completed</option>
+            </select>
+            <IconChevronDown />
+          </div>
+
+          <button className="btn-primary btn-new-group" onClick={() => setShowCreateModal(true)}>
+            <IconPlus /> New Group
+          </button>
+        </div>
+      </section>
+
+      {/* ===== GRID ===== */}
+      {filtered.length === 0 ? (
+        <p className="groups-empty">No groups match your search/filter.</p>
+      ) : (
+        <section className="groups-grid">
+          {filtered.map((g) => (
+            <div
+              className={`group-card ${g.status === "Completed" ? "completed" : ""}`}
+              key={g.id}
+            >
+              <div className="group-card-top">
+                <div>
+                  <span className="group-name-lg">{g.name}</span>
+                  <span className="group-meta">
+                    <IconUsers /> {g.members} members
+                  </span>
+                </div>
+                <span className={`status-pill status-${g.status.toLowerCase()}`}>
+                  {g.status}
+                </span>
+              </div>
+
+              <div className="group-amounts">
+                <div>
+                  <span>TOTAL AMOUNT</span>
+                  <strong>{g.total.toLocaleString()} XLM</strong>
+                </div>
+                <div className="align-right">
+                  <span>YOUR SHARE</span>
+                  <strong className="share-value">{g.share.toLocaleString()} XLM</strong>
+                </div>
+              </div>
+
+              <div className="group-status-row">
+                <span>Progress</span>
+                <span className={g.percent === 100 ? "progress-complete-text" : "progress-text"}>
+                  {Math.round(g.percent)}% Paid
+                </span>
+              </div>
+              <div className="progress-track">
+                <div
+                  className={`progress-fill ${g.percent === 100 ? "is-complete" : ""}`}
+                  style={{ width: `${g.percent}%` }}
                 />
               </div>
 
-              <div className="groups-select-wrap">
-                <select
-                  className="groups-select"
-                  value={filter}
-                  onChange={(e) => setFilter(e.target.value as typeof filter)}
-                >
-                  <option>All Groups</option>
-                  <option>Active</option>
-                  <option>Pending</option>
-                  <option>Completed</option>
-                </select>
-                <IconChevronDown />
-              </div>
-
-              <button className="btn-primary btn-new-group" onClick={() => setShowCreateModal(true)}>
-                <IconPlus /> New Group
-              </button>
+              <button className="btn-view-details">View Details</button>
             </div>
-          </section>
-
-          {/* ===== GRID ===== */}
-          {filtered.length === 0 ? (
-            <p className="groups-empty">Tidak ada grup yang cocok dengan pencarian/filter.</p>
-          ) : (
-            <section className="groups-grid">
-              {filtered.map((g) => (
-                <div
-                  className={`group-card ${g.status === "Completed" ? "completed" : ""}`}
-                  key={g.name}
-                >
-                  <div className="group-card-top">
-                    <div>
-                      <span className="group-name-lg">{g.name}</span>
-                      <span className="group-meta">
-                        <IconUsers /> {g.members} members
-                      </span>
-                    </div>
-                    <span className={`status-pill status-${g.status.toLowerCase()}`}>{g.status}</span>
-                  </div>
-
-                  <div className="group-amounts">
-                    <div>
-                      <span>TOTAL AMOUNT</span>
-                      <strong>{g.total.toLocaleString()} XLM</strong>
-                    </div>
-                    <div className="align-right">
-                      <span>YOUR SHARE</span>
-                      <strong className="share-value">{g.share.toLocaleString()} XLM</strong>
-                    </div>
-                  </div>
-
-                  <div className="group-status-row">
-                    <span>Progress</span>
-                    <span className={g.percent === 100 ? "progress-complete-text" : "progress-text"}>
-                      {g.percent}% Paid
-                    </span>
-                  </div>
-                  <div className="progress-track">
-                    <div
-                      className={`progress-fill ${g.percent === 100 ? "is-complete" : ""}`}
-                      style={{ width: `${g.percent}%` }}
-                    />
-                  </div>
-
-                  <button className="btn-view-details">View Details</button>
-                </div>
-              ))}
-            </section>
-          )}
+          ))}
+        </section>
+      )}
 
       {/* ===== FOOTER ===== */}
       <footer className="app-footer groups-footer">
@@ -181,11 +232,16 @@ export default function Groups({ address, onDisconnect, onGoHome, onGoActivity }
         </div>
       </footer>
 
+      {/* ===== MODAL CREATE GROUP ===== */}
       {showCreateModal && (
         <CreateGroupModal
           address={address}
           onClose={() => setShowCreateModal(false)}
-          onViewGroup={() => setShowCreateModal(false)}
+          onSuccess={handleGroupCreated}
+          onViewGroup={() => {
+            setShowCreateModal(false);
+            // Optional: navigate to group detail if needed
+          }}
         />
       )}
     </div>

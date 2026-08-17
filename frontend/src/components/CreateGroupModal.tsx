@@ -15,6 +15,11 @@ interface CreateGroupModalProps {
   onClose: () => void;
   onViewGroup?: (group: { name: string; hash: string }) => void;
   /**
+   * Dipanggil setelah transaksi berhasil, sebelum modal menampilkan success.
+   * Cocok untuk menyimpan grup ke state di komponen induk.
+   */
+  onSuccess?: (data: { name: string; hash: string }) => void;
+  /**
    * Ganti dengan pemanggilan kontrak Soroban yang sebenarnya (mis. invoke create_group).
    * Default-nya cuma simulasi delay supaya alur UI bisa langsung dicoba.
    */
@@ -39,6 +44,7 @@ export default function CreateGroupModal({
   address,
   onClose,
   onViewGroup,
+  onSuccess,
   onCreateGroup,
 }: CreateGroupModalProps) {
   const [step, setStep] = useState<Step>("form");
@@ -61,11 +67,21 @@ export default function CreateGroupModal({
       const result = await (onCreateGroup
         ? onCreateGroup({ name, description })
         : simulateCreateGroup());
+
       setSubStep(2);
       await delay(500);
+
+      // ✅ Set hash agar tampil di success UI
       setTxHash(result.hash);
+      
+      // ✅ Panggil onSuccess agar komponen induk bisa simpan grup ke state
+      //    Ini dilakukan SEBELUM setStep("success") agar data sudah tersimpan
+      //    meskipun user langsung menutup modal.
+      onSuccess?.({ name, hash: result.hash });
+
       setStep("success");
-    } catch {
+    } catch (error) {
+      console.error("Failed to create group:", error);
       alert("Gagal membuat grup. Silakan coba lagi.");
       setStep("form");
     }
@@ -266,4 +282,3 @@ export default function CreateGroupModal({
     </div>
   );
 }
-

@@ -3,6 +3,7 @@ import WalletConnect, { WalletConnectHandle, WalletStatus } from "./components/W
 import Dashboard from "./components/Dashboard";
 import Groups from "./components/Groups";
 import ActivityPage from "./components/Activity";
+import CreateGroupModal from "./components/CreateGroupModal"; // akan kita buat
 import {
   IconWallet,
   IconCheck,
@@ -16,9 +17,27 @@ import {
 } from "./components/Icons";
 import "./App.css";
 
+// ============================================
+//  TIPE DATA GROUP (single source of truth)
+// ============================================
+export interface Member {
+  address: string;
+  share: number;
+  paid: boolean;
+}
+
+export interface Group {
+  id: string;
+  name: string;
+  owner: string;
+  totalShare: number;
+  members: Member[];
+}
+
 type MemberStatus = "paid" | "pending" | "unpaid";
 
-interface Member {
+// tipe untuk demo
+interface DemoMember {
   name: string;
   share: number;
   status: MemberStatus;
@@ -27,6 +46,7 @@ interface Member {
 function App() {
   const walletRef = useRef<WalletConnectHandle>(null);
 
+  // ===== STATE =====
   const [walletStatus, setWalletStatus] = useState<WalletStatus>("idle");
   const [address, setAddress] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -34,7 +54,16 @@ function App() {
   const [isDemo, setIsDemo] = useState(false);
   const [page, setPage] = useState<"landing" | "dashboard" | "groups" | "activity">("landing");
 
-  const demoGroup = {
+  // ===== SOURCE DATA TUNGGAL UNTUK GROUP =====
+  const [groups, setGroups] = useState<Group[]>([]);
+
+  // ===== FUNGSI UNTUK MENAMBAH GROUP =====
+  const addGroup = (newGroup: Group) => {
+    setGroups((prev) => [...prev, newGroup]);
+  };
+
+  // ===== DEMO DATA (tidak mempengaruhi groups state) =====
+  const demoGroup: { name: string; total: number; members: DemoMember[] } = {
     name: "Trip to Bali",
     total: 5000,
     members: [
@@ -42,9 +71,10 @@ function App() {
       { name: "Bob", share: 1250, status: "pending" },
       { name: "You (Demo)", share: 1250, status: "unpaid" },
       { name: "Charlie", share: 1250, status: "paid" },
-    ] as Member[],
+    ],
   };
 
+  // ===== HANDLER =====
   function handleStatusChange(
     status: WalletStatus,
     data?: { address?: string; error?: string }
@@ -75,10 +105,13 @@ function App() {
     setPage("landing");
   }
 
+  // ===== RENDER BERDASARKAN PAGE =====
   if (page === "dashboard" && walletStatus === "connected") {
     return (
       <Dashboard
         address={address}
+        groups={groups}               // ← source data
+        onAddGroup={addGroup}         // ← fungsi untuk menambah
         onDisconnect={handleFullDisconnect}
         onGoGroups={() => setPage("groups")}
         onGoActivity={() => setPage("activity")}
@@ -90,6 +123,7 @@ function App() {
     return (
       <Groups
         address={address}
+        groups={groups}               // ← source data
         onDisconnect={handleFullDisconnect}
         onGoHome={() => setPage("dashboard")}
         onGoActivity={() => setPage("activity")}
@@ -101,6 +135,7 @@ function App() {
     return (
       <ActivityPage
         address={address}
+        groups={groups}               // ← source data (opsional)
         onDisconnect={handleFullDisconnect}
         onGoDashboard={() => setPage("dashboard")}
         onGoGroups={() => setPage("groups")}
@@ -108,13 +143,16 @@ function App() {
     );
   }
 
+  // ============================================
+  //  LANDING PAGE (belum connect atau demo)
+  // ============================================
   return (
     <div className="app">
       <div className="background-glow glow-one" />
       <div className="background-glow glow-two" />
 
       <div className="container">
-        {/* ===== HEADER ===== */}
+        {/* HEADER */}
         <header className="navbar">
           <div className="brand">
             <div className="brand-icon">
@@ -125,7 +163,7 @@ function App() {
           <WalletConnect ref={walletRef} onStatusChange={handleStatusChange} />
         </header>
 
-        {/* ===== ERROR TOAST (overlay, independen dari card di bawahnya) ===== */}
+        {/* ERROR TOAST */}
         {showErrorToast && walletStatus === "error" && (
           <div className="error-toast">
             <IconWarning />
@@ -145,10 +183,9 @@ function App() {
           </div>
         )}
 
-        {/* ===== MAIN CONTENT (state-driven, exclusive) ===== */}
-
+        {/* MAIN CONTENT */}
         {walletStatus === "connected" ? (
-          // === CONNECTED STATE (Image 4) ===
+          // CONNECTED STATE
           <div className="center-stage">
             <div className="connected-card">
               <div className="connected-icon">
@@ -179,11 +216,10 @@ function App() {
             </div>
           </div>
         ) : isDemo ? (
-          // === DEMO MODE (Image 3) ===
+          // DEMO MODE
           <div className="center-stage">
             <p className="demo-badge">Preview Mode: Group Bill</p>
             <p className="demo-sub">Simulated transaction environment.</p>
-
             <div className="demo-card">
               <div className="demo-card-header">
                 <div>
@@ -197,7 +233,6 @@ function App() {
                   </strong>
                 </div>
               </div>
-
               <ul className="demo-members">
                 {demoGroup.members.map((m) => (
                   <li key={m.name} className={m.name.includes("(Demo)") ? "is-you" : ""}>
@@ -217,7 +252,6 @@ function App() {
                 ))}
               </ul>
             </div>
-
             <p className="demo-note">
               This is demo mode. Connect wallet to perform real transactions.
             </p>
@@ -229,7 +263,7 @@ function App() {
             </button>
           </div>
         ) : walletStatus === "connecting" || walletStatus === "error" ? (
-          // === CONNECTING / ERROR STATE (Image 1) ===
+          // CONNECTING / ERROR
           <div className="center-stage">
             <div className="connect-simple-card">
               <div className="connect-simple-icon">
@@ -249,7 +283,7 @@ function App() {
             </div>
           </div>
         ) : (
-          // === IDLE / HOME (Image 2) ===
+          // IDLE / HOME
           <section className="hero-grid">
             <div className="hero-left">
               <p className="eyebrow">
@@ -327,7 +361,7 @@ function App() {
           </section>
         )}
 
-        {/* ===== FOOTER ===== */}
+        {/* FOOTER */}
         <footer className="app-footer">
           <span className="footer-brand">Built on Stellar Soroban</span>
           <div className="footer-links">
