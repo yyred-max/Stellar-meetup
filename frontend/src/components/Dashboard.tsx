@@ -1,5 +1,4 @@
 // src/components/Dashboard.tsx
-import { useState } from "react";
 import {
   IconPlus,
   IconLogout,
@@ -12,6 +11,7 @@ interface DashboardProps {
   userName?: string;
   onDisconnect: () => void;
   onGoGroups: () => void;
+  onGoActivity: () => void;
 }
 
 type GroupStatus = { paid: number; pending: number; completed: boolean };
@@ -74,8 +74,8 @@ function getGreeting() {
   return "Good night";
 }
 
-export default function Dashboard({ address, userName = "Yuli", onDisconnect, onGoGroups }: DashboardProps) {
-  const [tab, setTab] = useState<"Dashboard" | "Groups" | "Activity">("Dashboard");
+export default function Dashboard({ address, userName = "Yuli", onDisconnect, onGoGroups, onGoActivity }: DashboardProps) {
+  const tab: "Dashboard" | "Groups" | "Activity" = "Dashboard";
 
   return (
     <div className="dashboard">
@@ -93,7 +93,10 @@ export default function Dashboard({ address, userName = "Yuli", onDisconnect, on
             <button
               key={t}
               className={`dashboard-tab ${tab === t ? "active" : ""}`}
-              onClick={() => (t === "Groups" ? onGoGroups() : setTab(t))}
+              onClick={() => {
+                if (t === "Groups") onGoGroups();
+                if (t === "Activity") onGoActivity();
+              }}
             >
               {t}
             </button>
@@ -112,13 +115,7 @@ export default function Dashboard({ address, userName = "Yuli", onDisconnect, on
         </div>
       </header>
 
-      {tab !== "Dashboard" ? (
-        <div className="dashboard-placeholder">
-          <p>{tab} belum tersedia — segera hadir.</p>
-        </div>
-      ) : (
-        <>
-          {/* ===== GREETING ===== */}
+      {/* ===== GREETING ===== */}
           <section className="dashboard-greeting">
             <div>
               <p className="greeting-title">
@@ -213,8 +210,6 @@ export default function Dashboard({ address, userName = "Yuli", onDisconnect, on
               </div>
             </div>
           </section>
-        </>
-      )}
     </div>
   );
 }

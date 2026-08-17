@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import WalletConnect, { WalletConnectHandle, WalletStatus } from "./components/WalletConnect";
 import Dashboard from "./components/Dashboard";
 import Groups from "./components/Groups";
+import ActivityPage from "./components/Activity";
 import {
   IconWallet,
   IconCheck,
@@ -31,7 +32,7 @@ function App() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [showErrorToast, setShowErrorToast] = useState(false);
   const [isDemo, setIsDemo] = useState(false);
-  const [page, setPage] = useState<"landing" | "dashboard" | "groups">("landing");
+  const [page, setPage] = useState<"landing" | "dashboard" | "groups" | "activity">("landing");
 
   const demoGroup = {
     name: "Trip to Bali",
@@ -80,6 +81,7 @@ function App() {
         address={address}
         onDisconnect={handleFullDisconnect}
         onGoGroups={() => setPage("groups")}
+        onGoActivity={() => setPage("activity")}
       />
     );
   }
@@ -90,6 +92,18 @@ function App() {
         address={address}
         onDisconnect={handleFullDisconnect}
         onGoHome={() => setPage("dashboard")}
+        onGoActivity={() => setPage("activity")}
+      />
+    );
+  }
+
+  if (page === "activity" && walletStatus === "connected") {
+    return (
+      <ActivityPage
+        address={address}
+        onDisconnect={handleFullDisconnect}
+        onGoDashboard={() => setPage("dashboard")}
+        onGoGroups={() => setPage("groups")}
       />
     );
   }

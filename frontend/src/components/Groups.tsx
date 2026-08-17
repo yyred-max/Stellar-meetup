@@ -6,6 +6,7 @@ interface GroupsProps {
   address: string | null;
   onDisconnect: () => void;
   onGoHome: () => void;
+  onGoActivity: () => void;
 }
 
 type Status = "Active" | "Pending" | "Completed";
@@ -26,8 +27,8 @@ const allGroups: GroupItem[] = [
   { name: "Monthly Rent", status: "Active", members: 3, total: 4500, share: 1500, percent: 85 },
 ];
 
-export default function Groups({ address, onDisconnect, onGoHome }: GroupsProps) {
-  const [tab, setTab] = useState<"Dashboard" | "Groups" | "Activity">("Groups");
+export default function Groups({ address, onDisconnect, onGoHome, onGoActivity }: GroupsProps) {
+  const tab: "Dashboard" | "Groups" | "Activity" = "Groups";
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"All Groups" | Status>("All Groups");
 
@@ -55,7 +56,10 @@ export default function Groups({ address, onDisconnect, onGoHome }: GroupsProps)
             <button
               key={t}
               className={`dashboard-tab ${tab === t ? "active" : ""}`}
-              onClick={() => (t === "Dashboard" ? onGoHome() : setTab(t))}
+              onClick={() => {
+                if (t === "Dashboard") onGoHome();
+                if (t === "Activity") onGoActivity();
+              }}
             >
               {t}
             </button>
@@ -74,13 +78,7 @@ export default function Groups({ address, onDisconnect, onGoHome }: GroupsProps)
         </div>
       </header>
 
-      {tab !== "Groups" ? (
-        <div className="dashboard-placeholder">
-          <p>{tab} belum tersedia — segera hadir.</p>
-        </div>
-      ) : (
-        <>
-          {/* ===== HEADER + CONTROLS ===== */}
+      {/* ===== HEADER + CONTROLS ===== */}
           <section className="groups-header">
             <div>
               <h1 className="groups-title">Your Groups</h1>
@@ -167,8 +165,6 @@ export default function Groups({ address, onDisconnect, onGoHome }: GroupsProps)
               ))}
             </section>
           )}
-        </>
-      )}
 
       {/* ===== FOOTER ===== */}
       <footer className="app-footer groups-footer">

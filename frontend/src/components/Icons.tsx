@@ -112,3 +112,17 @@ export const IconUsers = () => (
     <path d="M15.5 13.2c2.7.4 4.5 2.5 4.5 5.3" />
   </svg>
 );
+
+export const IconFolder = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+    <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z" />
+  </svg>
+);
+
+export const IconAlertCircle = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 8v5" />
+    <circle cx="12" cy="16" r="0.6" fill="currentColor" stroke="none" />
+  </svg>
+);
