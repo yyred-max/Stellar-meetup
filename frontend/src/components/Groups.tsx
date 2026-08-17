@@ -27,6 +27,7 @@ interface GroupsProps {
   address: string | null;
   groups: Group[];
   onAddGroup: (group: Group) => void;
+  onViewGroup: (groupId: string) => void; // ← BARU
   onDisconnect: () => void;
   onGoHome: () => void;
   onGoActivity: () => void;
@@ -38,6 +39,7 @@ export default function Groups({
   address,
   groups,
   onAddGroup,
+  onViewGroup, // ← BARU
   onDisconnect,
   onGoHome,
   onGoActivity,
@@ -213,7 +215,12 @@ export default function Groups({
                 />
               </div>
 
-              <button className="btn-view-details">View Details</button>
+              <button
+                className="btn-view-details"
+                onClick={() => onViewGroup(g.id)}
+                >
+                View Details
+            </button>
             </div>
           ))}
         </section>

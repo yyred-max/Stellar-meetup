@@ -3,7 +3,7 @@ import WalletConnect, { WalletConnectHandle, WalletStatus } from "./components/W
 import Dashboard from "./components/Dashboard";
 import Groups from "./components/Groups";
 import ActivityPage from "./components/Activity";
-import CreateGroupModal from "./components/CreateGroupModal"; // akan kita buat
+import GroupDetail from "./components/GroupDetail"; // ← BARU
 import {
   IconWallet,
   IconCheck,
@@ -52,14 +52,40 @@ function App() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [showErrorToast, setShowErrorToast] = useState(false);
   const [isDemo, setIsDemo] = useState(false);
-  const [page, setPage] = useState<"landing" | "dashboard" | "groups" | "activity">("landing");
+
+  // ===== PAGE STATE =====
+  const [page, setPage] = useState<"landing" | "dashboard" | "groups" | "activity" | "groupDetail">("landing");
 
   // ===== SOURCE DATA TUNGGAL UNTUK GROUP =====
   const [groups, setGroups] = useState<Group[]>([]);
 
+  // ===== STATE UNTUK GROUP DETAIL =====
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
+
   // ===== FUNGSI UNTUK MENAMBAH GROUP =====
   const addGroup = (newGroup: Group) => {
     setGroups((prev) => [...prev, newGroup]);
+  };
+
+  // ===== FUNGSI UNTUK MENAMBAH MEMBER =====
+  const addMemberToGroup = (groupId: string, member: Member) => {
+    setGroups((prev) =>
+      prev.map((g) =>
+        g.id === groupId
+          ? {
+              ...g,
+              members: [...g.members, member],
+              totalShare: g.totalShare + member.share,
+            }
+          : g
+      )
+    );
+  };
+
+  // ===== FUNGSI UNTUK BUKA HALAMAN DETAIL GRUP =====
+  const handleViewGroup = (groupId: string) => {
+    setSelectedGroupId(groupId);
+    setPage("groupDetail");
   };
 
   // ===== DEMO DATA (tidak mempengaruhi groups state) =====
@@ -105,13 +131,16 @@ function App() {
     setPage("landing");
   }
 
-  // ===== RENDER BERDASARKAN PAGE =====
+  // ============================================================
+  //  RENDER BERDASARKAN PAGE
+  // ============================================================
+
   if (page === "dashboard" && walletStatus === "connected") {
     return (
       <Dashboard
         address={address}
-        groups={groups}               // ← source data
-        onAddGroup={addGroup}         // ← fungsi untuk menambah
+        groups={groups}
+        onAddGroup={addGroup}
         onDisconnect={handleFullDisconnect}
         onGoGroups={() => setPage("groups")}
         onGoActivity={() => setPage("activity")}
@@ -121,14 +150,35 @@ function App() {
 
   if (page === "groups" && walletStatus === "connected") {
     return (
-     <Groups
-      address={address}
-      groups={groups}
-      onAddGroup={addGroup}         // ✅ tambahkan ini
-      onDisconnect={handleFullDisconnect}
-      onGoHome={() => setPage("dashboard")}
-      onGoActivity={() => setPage("activity")}
-    />
+      <Groups
+        address={address}
+        groups={groups}
+        onAddGroup={addGroup}
+        onViewGroup={handleViewGroup}          // ← BARU
+        onDisconnect={handleFullDisconnect}
+        onGoHome={() => setPage("dashboard")}
+        onGoActivity={() => setPage("activity")}
+      />
+    );
+  }
+
+  if (page === "groupDetail" && walletStatus === "connected") {
+    const selectedGroup = groups.find((g) => g.id === selectedGroupId);
+    if (!selectedGroup) {
+      // fallback kalau id tidak ditemukan
+      setPage("groups");
+      return null;
+    }
+    return (
+      <GroupDetail
+        address={address}
+        group={selectedGroup}
+        onAddMember={addMemberToGroup}
+        onDisconnect={handleFullDisconnect}
+        onGoHome={() => setPage("dashboard")}
+        onGoGroups={() => setPage("groups")}
+        onGoActivity={() => setPage("activity")}
+      />
     );
   }
 
@@ -143,9 +193,9 @@ function App() {
     );
   }
 
-  // ============================================
+  // ============================================================
   //  LANDING PAGE (belum connect atau demo)
-  // ============================================
+  // ============================================================
   return (
     <div className="app">
       <div className="background-glow glow-one" />
