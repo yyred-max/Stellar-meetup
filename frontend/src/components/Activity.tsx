@@ -7,118 +7,76 @@ import {
   IconUser,
   IconFolder,
   IconAlertCircle,
+  IconCreditCard,
+  IconUserPlus,
 } from "./Icons";
+import type { Activity } from "../App";
 
 interface ActivityProps {
   address: string | null;
+  activities: Activity[];  // ← terima activities dari App
   onDisconnect: () => void;
   onGoDashboard: () => void;
   onGoGroups: () => void;
 }
 
-type ActivityKind = "payment" | "member_joined" | "group_created" | "payment_failed";
 type Category = "All Activity" | "Payments" | "Group Updates" | "System";
 
-interface ActivityEntry {
-  id: string;
-  date: string;
-  kind: ActivityKind;
-  text: string;
-  highlight?: string;
-  suffix?: string;
-  subtext?: string;
-  time: string;
-  searchable: string;
-}
-
-const entries: ActivityEntry[] = [
-  {
-    id: "1",
-    date: "Today",
-    kind: "payment",
-    text: "Yuliana paid",
-    highlight: "25.00 XLM",
-    suffix: "for Dinner at Surabaya",
-    subtext: "Hash: a1b2...c3d4",
-    time: "2 mins ago",
-    searchable: "yuliana dinner at surabaya",
-  },
-  {
-    id: "2",
-    date: "Today",
-    kind: "member_joined",
-    text: "Marcus joined Weekend Trip",
-    time: "1 hr ago",
-    searchable: "marcus weekend trip",
-  },
-  {
-    id: "3",
-    date: "Yesterday",
-    kind: "group_created",
-    text: "New group Office Lunch was created",
-    time: "09:42 AM",
-    searchable: "office lunch",
-  },
-  {
-    id: "4",
-    date: "Yesterday",
-    kind: "payment",
-    text: "You paid",
-    highlight: "120.50 XLM",
-    suffix: "to settle Weekend Trip",
-    subtext: "Hash: x9y8...z7w6",
-    time: "08:15 AM",
-    searchable: "weekend trip",
-  },
-  {
-    id: "5",
-    date: "October 24",
-    kind: "payment_failed",
-    text: "Payment failed for Coffee Run",
-    subtext: "Insufficient balance",
-    time: "02:30 PM",
-    searchable: "coffee run",
-  },
-];
-
-const categoryMap: Record<Category, ActivityKind[] | null> = {
-  "All Activity": null,
-  Payments: ["payment", "payment_failed"],
-  "Group Updates": ["member_joined", "group_created"],
-  System: [],
-};
-
-function iconFor(kind: ActivityKind) {
-  switch (kind) {
-    case "payment":
+function iconFor(type: Activity['type']) {
+  switch (type) {
+    case 'share_paid':
       return { icon: <IconCheck />, className: "icon-success" };
-    case "member_joined":
-      return { icon: <IconUser />, className: "icon-neutral" };
-    case "group_created":
-      return { icon: <IconFolder />, className: "icon-purple" };
-    case "payment_failed":
+    case 'member_added':
+      return { icon: <IconUserPlus />, className: "icon-purple" };
+    case 'group_created':
+      return { icon: <IconFolder />, className: "icon-neutral" };
+    default:
       return { icon: <IconAlertCircle />, className: "icon-danger" };
   }
 }
 
-export default function Activity({ address, onDisconnect, onGoDashboard, onGoGroups }: ActivityProps) {
+function getCategory(type: Activity['type']): Category {
+  switch (type) {
+    case 'share_paid':
+      return "Payments";
+    case 'member_added':
+    case 'group_created':
+      return "Group Updates";
+    default:
+      return "System";
+  }
+}
+
+export default function Activity({
+  address,
+  activities,
+  onDisconnect,
+  onGoDashboard,
+  onGoGroups,
+}: ActivityProps) {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<Category>("All Activity");
 
   const filtered = useMemo(() => {
-    const allowedKinds = categoryMap[category];
-    return entries.filter((e) => {
-      const matchesSearch = e.searchable.includes(search.toLowerCase());
-      const matchesCategory = allowedKinds === null || allowedKinds.includes(e.kind);
+    return activities.filter((a) => {
+      const matchesSearch = a.title.toLowerCase().includes(search.toLowerCase()) ||
+                            (a.description && a.description.toLowerCase().includes(search.toLowerCase()));
+      const matchesCategory = category === "All Activity" || getCategory(a.type) === category;
       return matchesSearch && matchesCategory;
     });
-  }, [search, category]);
+  }, [search, category, activities]);
 
+  // Kelompokkan berdasarkan tanggal
   const grouped = useMemo(() => {
-    const map = new Map<string, ActivityEntry[]>();
-    filtered.forEach((e) => {
-      if (!map.has(e.date)) map.set(e.date, []);
-      map.get(e.date)!.push(e);
+    const map = new Map<string, Activity[]>();
+    filtered.forEach((a) => {
+      const date = new Date(a.timestamp).toLocaleDateString(undefined, {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
+      if (!map.has(date)) map.set(date, []);
+      map.get(date)!.push(a);
     });
     return Array.from(map.entries());
   }, [filtered]);
@@ -135,8 +93,12 @@ export default function Activity({ address, onDisconnect, onGoDashboard, onGoGro
         </div>
 
         <nav className="dashboard-tabs">
-          <button className="dashboard-tab" onClick={onGoDashboard}>Dashboard</button>
-          <button className="dashboard-tab" onClick={onGoGroups}>Groups</button>
+          <button className="dashboard-tab" onClick={onGoDashboard}>
+            Dashboard
+          </button>
+          <button className="dashboard-tab" onClick={onGoGroups}>
+            Groups
+          </button>
           <button className="dashboard-tab active">Activity</button>
         </nav>
 
@@ -184,7 +146,9 @@ export default function Activity({ address, onDisconnect, onGoDashboard, onGoGro
 
       {/* ===== TIMELINE ===== */}
       {grouped.length === 0 ? (
-        <p className="groups-empty">Tidak ada aktivitas yang cocok.</p>
+        <p className="groups-empty" style={{ padding: '40px 0', color: 'var(--text-muted)' }}>
+          No activity found.
+        </p>
       ) : (
         <section className="activity-timeline">
           {grouped.map(([date, items]) => (
@@ -193,20 +157,18 @@ export default function Activity({ address, onDisconnect, onGoDashboard, onGoGro
                 <span className="date-bar" /> {date}
               </p>
               <div className="activity-card">
-                {items.map((e) => {
-                  const { icon, className } = iconFor(e.kind);
+                {items.map((a) => {
+                  const { icon, className } = iconFor(a.type);
                   return (
-                    <div className="activity-row" key={e.id}>
+                    <div className="activity-row" key={a.id}>
                       <span className={`activity-row-icon ${className}`}>{icon}</span>
                       <div className="activity-row-body">
-                        <p className="activity-row-text">
-                          {e.text}{" "}
-                          {e.highlight && <span className="activity-highlight">{e.highlight}</span>}{" "}
-                          {e.suffix}
-                        </p>
-                        {e.subtext && <p className="activity-row-hash">{e.subtext}</p>}
+                        <p className="activity-row-text">{a.title}</p>
+                        {a.description && <p className="activity-row-hash">{a.description}</p>}
                       </div>
-                      <span className="activity-row-time">{e.time}</span>
+                      <span className="activity-row-time">
+                        {new Date(a.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
                     </div>
                   );
                 })}
@@ -220,10 +182,18 @@ export default function Activity({ address, onDisconnect, onGoDashboard, onGoGro
       <footer className="app-footer groups-footer">
         <span className="footer-brand">Built on Stellar Soroban</span>
         <div className="footer-links">
-          <a href="https://github.com/yyred-max/Stellar-meetup" target="_blank" rel="noopener noreferrer">
+          <a
+            href="https://github.com/yyred-max/Stellar-meetup"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             Source Code
           </a>
-          <a href="https://developers.stellar.org/docs/" target="_blank" rel="noopener noreferrer">
+          <a
+            href="https://developers.stellar.org/docs/"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             Documentation
           </a>
         </div>
@@ -231,4 +201,3 @@ export default function Activity({ address, onDisconnect, onGoDashboard, onGoGro
     </div>
   );
 }
-

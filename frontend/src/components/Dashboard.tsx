@@ -7,6 +7,7 @@ import {
   IconCreditCard,
   IconUserPlus,
 } from "./Icons";
+import type { Activity } from "../App"; // import tipe dari App
 
 // ============================================================
 //  TIPE DATA (import dari App atau definisikan ulang)
@@ -31,28 +32,12 @@ export interface Group {
 interface DashboardProps {
   address: string | null;
   groups: Group[];
+  activities: Activity[];          // ← tambahkan
   onAddGroup: (group: Group) => void;
   onDisconnect: () => void;
   onGoGroups: () => void;
   onGoActivity: () => void;
 }
-
-// ============================================================
-//  DUMMY ACTIVITY (placeholder, tetap karena belum ada event)
-// ============================================================
-interface Activity {
-  icon: "pay" | "add";
-  title: string;
-  sub: string;
-  time: string;
-}
-
-const dummyActivities: Activity[] = [
-  { icon: "pay", title: "Yuliana paid 25 XLM", sub: "Dinner at Surabaya • 2 mins ago", time: "" },
-  { icon: "add", title: "You added Rizky", sub: "Weekend Trip • 15 mins ago", time: "" },
-  { icon: "add", title: 'You created "Office Lunch"', sub: "Today, 09:42", time: "" },
-  { icon: "pay", title: "Andi paid 25 XLM", sub: "Dinner at Surabaya • Today, 09:35", time: "" },
-];
 
 function getGreeting() {
   const hour = new Date().getHours();
@@ -65,6 +50,7 @@ function getGreeting() {
 export default function Dashboard({
   address,
   groups,
+  activities,          // ← terima activities
   onAddGroup,
   onDisconnect,
   onGoGroups,
@@ -104,6 +90,9 @@ export default function Dashboard({
     onAddGroup(newGroup);
     setShowCreateModal(false);
   };
+
+  // Ambil 5 aktivitas terbaru
+  const recentActivities = activities.slice(0, 5);
 
   return (
     <div className="dashboard">
@@ -238,19 +227,28 @@ export default function Dashboard({
 
         <div className="dashboard-activity">
           <h2>Recent Activity</h2>
-          <div className="activity-feed">
-            {dummyActivities.map((a, i) => (
-              <div className="activity-item" key={i}>
-                <span className={`activity-icon ${a.icon}`}>
-                  {a.icon === "pay" ? <IconCreditCard /> : <IconUserPlus />}
-                </span>
-                <div>
-                  <p className="activity-title">{a.title}</p>
-                  <p className="activity-sub">{a.sub}</p>
+          {recentActivities.length === 0 ? (
+            <p className="activity-empty" style={{ color: 'var(--text-muted)', fontSize: '14px', textAlign: 'center' }}>
+              No recent activity
+            </p>
+          ) : (
+            <div className="activity-feed">
+              {recentActivities.map((a) => (
+                <div className="activity-item" key={a.id}>
+                  <span className={`activity-icon ${a.type === 'share_paid' ? 'pay' : 'add'}`}>
+                    {a.type === 'share_paid' ? <IconCreditCard /> : <IconUserPlus />}
+                  </span>
+                  <div>
+                    <p className="activity-title">{a.title}</p>
+                    <p className="activity-sub">
+                      {a.description && `${a.description} • `}
+                      {new Date(a.timestamp).toLocaleTimeString()}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 

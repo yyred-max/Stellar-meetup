@@ -8,6 +8,7 @@ import {
   IconCopy,
 } from "./Icons";
 import type { Member } from "./Groups";
+import type { Activity } from "../App"; // import tipe Activity
 
 interface AddMemberModalProps {
   groupName: string;
@@ -15,6 +16,10 @@ interface AddMemberModalProps {
   onClose: () => void;
   onAdded: (member: Member) => void;
   onViewGroup?: () => void;
+  /**
+   * Dipanggil setelah transaksi berhasil untuk menambahkan aktivitas ke feed.
+   */
+  onActivityAdd?: (activity: Omit<Activity, 'id' | 'timestamp'>) => void;
 }
 
 type Step = "form" | "processing" | "success";
@@ -42,6 +47,7 @@ export default function AddMemberModal({
   onClose,
   onAdded,
   onViewGroup,
+  onActivityAdd, // ← tambahkan
 }: AddMemberModalProps) {
   const [step, setStep] = useState<Step>("form");
   const [walletAddress, setWalletAddress] = useState("");
@@ -68,6 +74,13 @@ export default function AddMemberModal({
         paid: false,
       };
       onAdded(newMember);
+
+      // ✅ Panggil onActivityAdd untuk menambahkan aktivitas ke feed
+      onActivityAdd?.({
+        type: 'member_added',
+        title: `You added ${shortAddr(walletAddress)} to ${groupName}`,
+        description: `Share: ${shareValue} XLM • Transaction: ${result.hash}`,
+      });
 
       setStep("success");
     } catch (error) {

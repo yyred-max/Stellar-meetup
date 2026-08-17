@@ -9,6 +9,7 @@ import {
   IconCopy,
   IconExternalLink,
 } from "./Icons";
+import type { Activity } from "../App"; // import tipe Activity
 
 interface CreateGroupModalProps {
   address: string | null;
@@ -19,6 +20,10 @@ interface CreateGroupModalProps {
    * Cocok untuk menyimpan grup ke state di komponen induk.
    */
   onSuccess?: (data: { name: string; hash: string }) => void;
+  /**
+   * Dipanggil setelah transaksi berhasil untuk menambahkan aktivitas ke feed.
+   */
+  onActivityAdd?: (activity: Omit<Activity, 'id' | 'timestamp'>) => void;
   /**
    * Ganti dengan pemanggilan kontrak Soroban yang sebenarnya (mis. invoke create_group).
    * Default-nya cuma simulasi delay supaya alur UI bisa langsung dicoba.
@@ -45,6 +50,7 @@ export default function CreateGroupModal({
   onClose,
   onViewGroup,
   onSuccess,
+  onActivityAdd, // ← tambahkan
   onCreateGroup,
 }: CreateGroupModalProps) {
   const [step, setStep] = useState<Step>("form");
@@ -73,11 +79,16 @@ export default function CreateGroupModal({
 
       // ✅ Set hash agar tampil di success UI
       setTxHash(result.hash);
-      
+
       // ✅ Panggil onSuccess agar komponen induk bisa simpan grup ke state
-      //    Ini dilakukan SEBELUM setStep("success") agar data sudah tersimpan
-      //    meskipun user langsung menutup modal.
       onSuccess?.({ name, hash: result.hash });
+
+      // ✅ Panggil onActivityAdd untuk menambahkan aktivitas ke feed
+      onActivityAdd?.({
+        type: 'group_created',
+        title: `You created group "${name}"`,
+        description: `Transaction: ${result.hash}`,
+      });
 
       setStep("success");
     } catch (error) {

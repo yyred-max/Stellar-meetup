@@ -3,6 +3,7 @@ import { useState } from "react";
 import AddMemberModal from "./AddMemberModal";
 import { IconPlus, IconLogout, IconUsers } from "./Icons";
 import type { Group, Member } from "./Groups";
+import type { Activity } from "../App"; // import tipe Activity
 
 interface GroupDetailProps {
   address: string | null;
@@ -12,6 +13,10 @@ interface GroupDetailProps {
   onGoHome: () => void;
   onGoGroups: () => void;
   onGoActivity: () => void;
+  /**
+   * Dipanggil setelah transaksi berhasil untuk menambahkan aktivitas ke feed.
+   */
+  onActivityAdd?: (activity: Omit<Activity, 'id' | 'timestamp'>) => void;
 }
 
 function shortAddr(addr: string) {
@@ -27,6 +32,7 @@ export default function GroupDetail({
   onGoHome,
   onGoGroups,
   onGoActivity,
+  onActivityAdd, // ← tambahkan
 }: GroupDetailProps) {
   const [showAddMember, setShowAddMember] = useState(false);
 
@@ -211,6 +217,7 @@ export default function GroupDetail({
           onClose={() => setShowAddMember(false)}
           onAdded={handleMemberAdded}
           onViewGroup={() => setShowAddMember(false)}
+          onActivityAdd={onActivityAdd} // ← teruskan
         />
       )}
     </div>

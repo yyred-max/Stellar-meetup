@@ -1,9 +1,11 @@
-import { useRef, useState } from "react";
+// src/App.tsx
+import { useRef, useState, useEffect } from "react";
 import WalletConnect, { WalletConnectHandle, WalletStatus } from "./components/WalletConnect";
 import Dashboard from "./components/Dashboard";
 import Groups from "./components/Groups";
 import ActivityPage from "./components/Activity";
-import GroupDetail from "./components/GroupDetail"; // ← BARU
+import GroupDetail from "./components/GroupDetail";
+import { getGroups } from "./lib/contract";
 import {
   IconWallet,
   IconCheck,
@@ -18,7 +20,7 @@ import {
 import "./App.css";
 
 // ============================================
-//  TIPE DATA GROUP (single source of truth)
+//  TIPE DATA
 // ============================================
 export interface Member {
   address: string;
@@ -34,9 +36,16 @@ export interface Group {
   members: Member[];
 }
 
+export interface Activity {
+  id: string;
+  type: 'group_created' | 'member_added' | 'share_paid';
+  title: string;
+  description?: string;
+  timestamp: string;
+}
+
 type MemberStatus = "paid" | "pending" | "unpaid";
 
-// tipe untuk demo
 interface DemoMember {
   name: string;
   share: number;
@@ -52,34 +61,96 @@ function App() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [showErrorToast, setShowErrorToast] = useState(false);
   const [isDemo, setIsDemo] = useState(false);
+  const [isLoadingGroups, setIsLoadingGroups] = useState(false);
 
   // ===== PAGE STATE =====
   const [page, setPage] = useState<"landing" | "dashboard" | "groups" | "activity" | "groupDetail">("landing");
 
-  // ===== SOURCE DATA TUNGGAL UNTUK GROUP =====
+  // ===== SOURCE DATA =====
   const [groups, setGroups] = useState<Group[]>([]);
-
-  // ===== STATE UNTUK GROUP DETAIL =====
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
+  const [activities, setActivities] = useState<Activity[]>([]);
+
+  // ===== FUNGSI LOAD DATA DARI BLOCKCHAIN / LOCALSTORAGE =====
+  const loadGroups = async () => {
+    if (!address) return;
+    setIsLoadingGroups(true);
+    try {
+      const data = await getGroups(address);
+      setGroups(data);
+      localStorage.setItem("splitbill_groups", JSON.stringify(data));
+    } catch (err) {
+      console.error("Failed to load groups from blockchain:", err);
+      const saved = localStorage.getItem("splitbill_groups");
+      if (saved) {
+        try {
+          setGroups(JSON.parse(saved));
+        } catch (e) {
+          // ignore
+        }
+      }
+    } finally {
+      setIsLoadingGroups(false);
+    }
+  };
+
+  // ===== PANGGIL LOADGROUPS SAAT WALLET CONNECT =====
+  useEffect(() => {
+    if (walletStatus === "connected" && address) {
+      loadGroups();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [walletStatus, address]);
+
+  // ===== SIMPAN KE LOCALSTORAGE SAAT GROUPS BERUBAH =====
+  useEffect(() => {
+    if (groups.length > 0) {
+      localStorage.setItem("splitbill_groups", JSON.stringify(groups));
+    }
+  }, [groups]);
+
+  // ===== FUNGSI UNTUK MENAMBAH ACTIVITY =====
+  const addActivity = (activity: Omit<Activity, 'id' | 'timestamp'>) => {
+    const newActivity: Activity = {
+      id: Date.now().toString(),
+      timestamp: new Date().toISOString(),
+      ...activity,
+    };
+    setActivities((prev) => [newActivity, ...prev]);
+  };
 
   // ===== FUNGSI UNTUK MENAMBAH GROUP =====
   const addGroup = (newGroup: Group) => {
     setGroups((prev) => [...prev, newGroup]);
+    addActivity({
+      type: 'group_created',
+      title: `You created group "${newGroup.name}"`,
+      description: `Group ID: ${newGroup.id}`,
+    });
   };
 
   // ===== FUNGSI UNTUK MENAMBAH MEMBER =====
   const addMemberToGroup = (groupId: string, member: Member) => {
     setGroups((prev) =>
-      prev.map((g) =>
-        g.id === groupId
-          ? {
-              ...g,
-              members: [...g.members, member],
-              totalShare: g.totalShare + member.share,
-            }
-          : g
-      )
+      prev.map((g) => {
+        if (g.id !== groupId) return g;
+        const updatedMembers = [...g.members, member];
+        const totalShare = updatedMembers.reduce((acc, m) => acc + m.share, 0);
+        return {
+          ...g,
+          members: updatedMembers,
+          totalShare,
+        };
+      })
     );
+    const group = groups.find(g => g.id === groupId);
+    if (group) {
+      addActivity({
+        type: 'member_added',
+        title: `You added ${member.address.slice(0,6)}...${member.address.slice(-4)} to ${group.name}`,
+        description: `Share: ${member.share} XLM`,
+      });
+    }
   };
 
   // ===== FUNGSI UNTUK BUKA HALAMAN DETAIL GRUP =====
@@ -88,7 +159,7 @@ function App() {
     setPage("groupDetail");
   };
 
-  // ===== DEMO DATA (tidak mempengaruhi groups state) =====
+  // ===== DEMO DATA =====
   const demoGroup: { name: string; total: number; members: DemoMember[] } = {
     name: "Trip to Bali",
     total: 5000,
@@ -140,6 +211,7 @@ function App() {
       <Dashboard
         address={address}
         groups={groups}
+        activities={activities}
         onAddGroup={addGroup}
         onDisconnect={handleFullDisconnect}
         onGoGroups={() => setPage("groups")}
@@ -154,7 +226,7 @@ function App() {
         address={address}
         groups={groups}
         onAddGroup={addGroup}
-        onViewGroup={handleViewGroup}          // ← BARU
+        onViewGroup={handleViewGroup}
         onDisconnect={handleFullDisconnect}
         onGoHome={() => setPage("dashboard")}
         onGoActivity={() => setPage("activity")}
@@ -165,7 +237,6 @@ function App() {
   if (page === "groupDetail" && walletStatus === "connected") {
     const selectedGroup = groups.find((g) => g.id === selectedGroupId);
     if (!selectedGroup) {
-      // fallback kalau id tidak ditemukan
       setPage("groups");
       return null;
     }
@@ -174,6 +245,7 @@ function App() {
         address={address}
         group={selectedGroup}
         onAddMember={addMemberToGroup}
+        onActivityAdd={addActivity}
         onDisconnect={handleFullDisconnect}
         onGoHome={() => setPage("dashboard")}
         onGoGroups={() => setPage("groups")}
@@ -186,6 +258,7 @@ function App() {
     return (
       <ActivityPage
         address={address}
+        activities={activities}
         onDisconnect={handleFullDisconnect}
         onGoDashboard={() => setPage("dashboard")}
         onGoGroups={() => setPage("groups")}
@@ -202,7 +275,6 @@ function App() {
       <div className="background-glow glow-two" />
 
       <div className="container">
-        {/* HEADER */}
         <header className="navbar">
           <div className="brand">
             <div className="brand-icon">
@@ -235,7 +307,6 @@ function App() {
 
         {/* MAIN CONTENT */}
         {walletStatus === "connected" ? (
-          // CONNECTED STATE
           <div className="center-stage">
             <div className="connected-card">
               <div className="connected-icon">
@@ -266,7 +337,6 @@ function App() {
             </div>
           </div>
         ) : isDemo ? (
-          // DEMO MODE
           <div className="center-stage">
             <p className="demo-badge">Preview Mode: Group Bill</p>
             <p className="demo-sub">Simulated transaction environment.</p>
@@ -313,7 +383,6 @@ function App() {
             </button>
           </div>
         ) : walletStatus === "connecting" || walletStatus === "error" ? (
-          // CONNECTING / ERROR
           <div className="center-stage">
             <div className="connect-simple-card">
               <div className="connect-simple-icon">
@@ -333,7 +402,6 @@ function App() {
             </div>
           </div>
         ) : (
-          // IDLE / HOME
           <section className="hero-grid">
             <div className="hero-left">
               <p className="eyebrow">
@@ -411,7 +479,6 @@ function App() {
           </section>
         )}
 
-        {/* FOOTER */}
         <footer className="app-footer">
           <span className="footer-brand">Built on Stellar Soroban</span>
           <div className="footer-links">
