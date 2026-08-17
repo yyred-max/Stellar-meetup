@@ -11,6 +11,7 @@ interface DashboardProps {
   address: string | null;
   userName?: string;
   onDisconnect: () => void;
+  onGoGroups: () => void;
 }
 
 type GroupStatus = { paid: number; pending: number; completed: boolean };
@@ -73,7 +74,7 @@ function getGreeting() {
   return "Good night";
 }
 
-export default function Dashboard({ address, userName = "Yuli", onDisconnect }: DashboardProps) {
+export default function Dashboard({ address, userName = "Yuli", onDisconnect, onGoGroups }: DashboardProps) {
   const [tab, setTab] = useState<"Dashboard" | "Groups" | "Activity">("Dashboard");
 
   return (
@@ -92,7 +93,7 @@ export default function Dashboard({ address, userName = "Yuli", onDisconnect }: 
             <button
               key={t}
               className={`dashboard-tab ${tab === t ? "active" : ""}`}
-              onClick={() => setTab(t)}
+              onClick={() => (t === "Groups" ? onGoGroups() : setTab(t))}
             >
               {t}
             </button>
@@ -217,4 +218,3 @@ export default function Dashboard({ address, userName = "Yuli", onDisconnect }: 
     </div>
   );
 }
-

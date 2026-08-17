@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import WalletConnect, { WalletConnectHandle, WalletStatus } from "./components/WalletConnect";
 import Dashboard from "./components/Dashboard";
+import Groups from "./components/Groups";
 import {
   IconWallet,
   IconCheck,
@@ -30,7 +31,7 @@ function App() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [showErrorToast, setShowErrorToast] = useState(false);
   const [isDemo, setIsDemo] = useState(false);
-  const [page, setPage] = useState<"landing" | "dashboard">("landing");
+  const [page, setPage] = useState<"landing" | "dashboard" | "groups">("landing");
 
   const demoGroup = {
     name: "Trip to Bali",
@@ -67,14 +68,28 @@ function App() {
     setWalletStatus("idle");
   }
 
+  function handleFullDisconnect() {
+    setAddress(null);
+    setWalletStatus("idle");
+    setPage("landing");
+  }
+
   if (page === "dashboard" && walletStatus === "connected") {
     return (
       <Dashboard
         address={address}
-        onDisconnect={() => {
-          walletRef.current?.disconnect();
-          setPage("landing");
-        }}
+        onDisconnect={handleFullDisconnect}
+        onGoGroups={() => setPage("groups")}
+      />
+    );
+  }
+
+  if (page === "groups" && walletStatus === "connected") {
+    return (
+      <Groups
+        address={address}
+        onDisconnect={handleFullDisconnect}
+        onGoHome={() => setPage("dashboard")}
       />
     );
   }

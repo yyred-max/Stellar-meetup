@@ -90,3 +90,25 @@ export const IconUserPlus = () => (
     <path d="M19 8v6M22 11h-6" />
   </svg>
 );
+
+export const IconSearch = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+    <circle cx="11" cy="11" r="7" />
+    <path d="m21 21-4.3-4.3" />
+  </svg>
+);
+
+export const IconChevronDown = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="m6 9 6 6 6-6" />
+  </svg>
+);
+
+export const IconUsers = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+    <circle cx="8" cy="8" r="3" />
+    <path d="M1.5 19c0-3.3 2.9-6 6.5-6s6.5 2.7 6.5 6" />
+    <circle cx="17" cy="8.5" r="2.3" />
+    <path d="M15.5 13.2c2.7.4 4.5 2.5 4.5 5.3" />
+  </svg>
+);
