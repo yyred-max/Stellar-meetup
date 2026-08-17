@@ -47,10 +47,10 @@ const WalletConnect = forwardRef<WalletConnectHandle, WalletConnectProps>(
     function parseError(err: any): string {
       const msg = String(err?.message || err || "").toLowerCase();
       if (msg.includes("reject") || msg.includes("declined") || msg.includes("cancel")) {
-        return "Koneksi ditolak. Coba lagi jika mau.";
+        return "Connection rejected. Please try again if you want to proceed.";
       }
       if (msg.includes("not found") || msg.includes("not installed")) {
-        return "Wallet tidak ditemukan. Pastikan extension sudah terinstall.";
+        return "Wallet not found. Please make sure the extension is installed.";
       }
       return "Wallet could not connect. Please ensure your wallet is available and try again.";
     }
@@ -72,13 +72,13 @@ const WalletConnect = forwardRef<WalletConnectHandle, WalletConnectProps>(
               const { address: publicKey } = await kit.getAddress();
 
               if (!publicKey) {
-                fail("Wallet tidak ditemukan. Pastikan extension wallet sudah terinstall.");
+                fail("Wallet not found. Please make sure your wallet extension is installed.");
                 return;
               }
 
               const hasEnoughBalance = await checkBalance(publicKey);
               if (!hasEnoughBalance) {
-                fail("Saldo XLM tidak cukup. Top-up via Friendbot terlebih dahulu.");
+                fail("Insufficient XLM balance. Please top up via Friendbot first.");
                 return;
               }
 
@@ -110,7 +110,7 @@ const WalletConnect = forwardRef<WalletConnectHandle, WalletConnectProps>(
       onStatusChange("idle");
     }
 
-    // ===== Header piece hanya, sesuai desain =====
+    // ===== Header piece only, sesuai desain =====
 
     if (status === "connected" && address) {
       return (
@@ -125,7 +125,7 @@ const WalletConnect = forwardRef<WalletConnectHandle, WalletConnectProps>(
       return (
         <div className="wallet-pill wallet-pill-connecting">
           <IconSpinner size={14} />
-          Connecting
+          Connecting…
         </div>
       );
     }
