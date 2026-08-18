@@ -71,27 +71,33 @@ function App() {
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [activities, setActivities] = useState<Activity[]>([]);
 
-  // ===== FUNGSI LOAD DATA DARI BLOCKCHAIN / LOCALSTORAGE =====
+  // ===== FUNGSI LOAD DATA DARI BLOCKCHAIN (PRIORITAS UTAMA) =====
   const loadGroups = async () => {
     if (!address) return;
     setIsLoadingGroups(true);
     try {
+      // Coba ambil dari blockchain terlebih dahulu
       const data = await getGroups(address);
+      
+      // Jika blockchain mengembalikan data (walau length 0, tetap set agar kosong)
+      setGroups(data);
+      
+      // Simpan ke localStorage sebagai cache (untuk fallback saat offline / error)
       if (data && data.length > 0) {
-        setGroups(data);
         localStorage.setItem(`splitbill_groups_${address}`, JSON.stringify(data));
       } else {
-        const saved = localStorage.getItem(`splitbill_groups_${address}`);
-        if (saved) {
-          try {
-            setGroups(JSON.parse(saved));
-          } catch (e) {
-            // ignore
-          }
-        }
+        // Jika blockchain mengembalikan array kosong, kita tetap set kosong,
+        // tapi tidak perlu menimpa localStorage (biarkan cache lama jika ada)
+        // Tapi untuk konsistensi, kita bisa hapus cache atau biarkan saja.
+        // Lebih baik kita biarkan cache lama, karena mungkin blockchain kosong
+        // tapi user punya data di localStorage dari sebelumnya (misalnya transaksi
+        // belum di-sync ke blockchain). Namun untuk kasus ini, kita akan tetap
+        // mengutamakan blockchain, jadi kita set groups ke data dari blockchain.
+        // Kita tidak akan mengubah localStorage.
       }
     } catch (err) {
       console.error("Failed to load groups from blockchain:", err);
+      // Fallback ke localStorage jika blockchain gagal
       const saved = localStorage.getItem(`splitbill_groups_${address}`);
       if (saved) {
         try {
@@ -99,6 +105,8 @@ function App() {
         } catch (e) {
           // ignore
         }
+      } else {
+        setGroups([]);
       }
     } finally {
       setIsLoadingGroups(false);
@@ -108,22 +116,13 @@ function App() {
   // ===== PANGGIL LOADGROUPS SAAT WALLET CONNECT =====
   useEffect(() => {
     if (walletStatus === "connected" && address) {
-      const saved = localStorage.getItem(`splitbill_groups_${address}`);
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          if (parsed.length > 0) {
-            setGroups(parsed);
-            return;
-          }
-        } catch (e) {}
-      }
+      // Selalu panggil loadGroups untuk ambil dari blockchain, ignore cache localStorage
       loadGroups();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [walletStatus, address]);
 
-  // ===== SIMPAN KE LOCALSTORAGE SAAT GROUPS BERUBAH =====
+  // ===== SIMPAN KE LOCALSTORAGE SAAT GROUPS BERUBAH (sebagai cache) =====
   useEffect(() => {
     if (address && groups.length > 0) {
       localStorage.setItem(`splitbill_groups_${address}`, JSON.stringify(groups));
@@ -291,7 +290,7 @@ function App() {
         address={address}
         group={selectedGroup}
         onAddMember={addMemberToGroup}
-        onMarkPaid={markMemberPaid}   // ← BARU
+        onMarkPaid={markMemberPaid}
         onDisconnect={handleFullDisconnect}
         onGoHome={() => setPage("dashboard")}
         onGoGroups={() => setPage("groups")}
