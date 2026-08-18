@@ -171,7 +171,7 @@ export default function PayShareModal({
               </div>
               <h3>Preparing payment...</h3>
               <p className="processing-warning">
-                <IconInfo size={13} /> Secure Soroban Contract
+                <IconInfo /> Secure Soroban Contract
               </p>
 
               <div className="pay-sending-box">
@@ -180,7 +180,7 @@ export default function PayShareModal({
               </div>
 
               <p className="processing-footer">
-                <IconSpinner size={13} /> PROCESSING...
+                <IconSpinner /> PROCESSING...
               </p>
             </div>
           </div>
@@ -213,7 +213,7 @@ export default function PayShareModal({
               <div className="success-row">
                 <span>Status</span>
                 <span className="status-badge status-paid">
-                  <IconCheck size={12} /> Paid
+                  <IconCheck /> Paid
                 </span>
               </div>
               <div className="success-row">
