@@ -226,6 +226,7 @@ export default function PayShareModal({
                 </span>
               </div>
               
+              <a
                 className="explorer-link"
                 href={`https://stellar.expert/explorer/testnet/tx/${txHash}`}
                 target="_blank"
