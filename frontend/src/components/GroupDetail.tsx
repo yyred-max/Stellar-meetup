@@ -1,21 +1,20 @@
 // src/components/GroupDetail.tsx
 import { useState } from "react";
 import AddMemberModal from "./AddMemberModal";
+import PayShareModal from "./PayShareModal"; // ← BARU
 import { IconPlus, IconLogout, IconUsers } from "./Icons";
 import type { Group, Member } from "./Groups";
-import type { Activity } from "../App"; // import tipe Activity
+import type { Activity } from "../App";
 
 interface GroupDetailProps {
   address: string | null;
   group: Group;
   onAddMember: (groupId: string, member: Member) => void;
+  onMarkPaid: (groupId: string, memberAddress: string) => void; // ← BARU
   onDisconnect: () => void;
   onGoHome: () => void;
   onGoGroups: () => void;
   onGoActivity: () => void;
-  /**
-   * Dipanggil setelah transaksi berhasil untuk menambahkan aktivitas ke feed.
-   */
   onActivityAdd?: (activity: Omit<Activity, 'id' | 'timestamp'>) => void;
 }
 
@@ -28,13 +27,15 @@ export default function GroupDetail({
   address,
   group,
   onAddMember,
+  onMarkPaid, // ← BARU
   onDisconnect,
   onGoHome,
   onGoGroups,
   onGoActivity,
-  onActivityAdd, // ← tambahkan
+  onActivityAdd,
 }: GroupDetailProps) {
   const [showAddMember, setShowAddMember] = useState(false);
+  const [payTarget, setPayTarget] = useState<Member | null>(null); // ← BARU
 
   const totalMembers = group.members.length;
   const paidCount = group.members.filter((m) => m.paid).length;
@@ -115,27 +116,38 @@ export default function GroupDetail({
             </p>
           ) : (
             <ul className="member-list">
-              {group.members.map((m) => (
-                <li key={m.address} className="member-row">
-                  <span className="member-avatar-lg">
-                    <IconUsers />
-                  </span>
-                  <div className="member-row-identity">
-                    <strong>{shortAddr(m.address)}</strong>
-                    <span className="member-row-addr">{m.address}</span>
-                  </div>
-                  <span className="member-row-share">
-                    {m.share.toLocaleString()} XLM
-                  </span>
-                  <span
-                    className={`status-badge ${
-                      m.paid ? "status-paid" : "status-pending"
-                    }`}
-                  >
-                    {m.paid ? "Paid" : "Pending"}
-                  </span>
-                </li>
-              ))}
+              {group.members.map((m) => {
+                const isCurrentUser = address && m.address === address;
+                return (
+                  <li key={m.address} className="member-row">
+                    <span className="member-avatar-lg">
+                      <IconUsers />
+                    </span>
+                    <div className="member-row-identity">
+                      <strong>{shortAddr(m.address)}</strong>
+                      <span className="member-row-addr">{m.address}</span>
+                    </div>
+                    <span className="member-row-share">
+                      {m.share.toLocaleString()} XLM
+                    </span>
+                    <span
+                      className={`status-badge ${
+                        m.paid ? "status-paid" : "status-pending"
+                      }`}
+                    >
+                      {m.paid ? "Paid" : "Pending"}
+                    </span>
+                    {!m.paid && isCurrentUser && (
+                      <button
+                        className="btn-pay-share"
+                        onClick={() => setPayTarget(m)}
+                      >
+                        Pay
+                      </button>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>
@@ -209,7 +221,7 @@ export default function GroupDetail({
         </div>
       </footer>
 
-      {/* ===== MODAL ===== */}
+      {/* ===== MODALS ===== */}
       {showAddMember && (
         <AddMemberModal
           groupName={group.name}
@@ -217,7 +229,18 @@ export default function GroupDetail({
           onClose={() => setShowAddMember(false)}
           onAdded={handleMemberAdded}
           onViewGroup={() => setShowAddMember(false)}
-          onActivityAdd={onActivityAdd} // ← teruskan
+          onActivityAdd={onActivityAdd}
+        />
+      )}
+
+      {payTarget && (
+        <PayShareModal
+          groupName={group.name}
+          memberAddress={payTarget.address}
+          payerAddress={address}
+          shareAmount={payTarget.share}
+          onClose={() => setPayTarget(null)}
+          onPaid={() => onMarkPaid(group.id, payTarget.address)}
         />
       )}
     </div>

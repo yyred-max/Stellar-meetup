@@ -76,13 +76,11 @@ function App() {
     if (!address) return;
     setIsLoadingGroups(true);
     try {
-      // Coba dari blockchain
       const data = await getGroups(address);
       if (data && data.length > 0) {
         setGroups(data);
         localStorage.setItem(`splitbill_groups_${address}`, JSON.stringify(data));
       } else {
-        // Jika blockchain tidak mengembalikan data, coba dari localStorage
         const saved = localStorage.getItem(`splitbill_groups_${address}`);
         if (saved) {
           try {
@@ -94,7 +92,6 @@ function App() {
       }
     } catch (err) {
       console.error("Failed to load groups from blockchain:", err);
-      // Fallback ke localStorage
       const saved = localStorage.getItem(`splitbill_groups_${address}`);
       if (saved) {
         try {
@@ -111,16 +108,12 @@ function App() {
   // ===== PANGGIL LOADGROUPS SAAT WALLET CONNECT =====
   useEffect(() => {
     if (walletStatus === "connected" && address) {
-      // Cek localStorage dulu sebelum memanggil blockchain
       const saved = localStorage.getItem(`splitbill_groups_${address}`);
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
           if (parsed.length > 0) {
             setGroups(parsed);
-            // Tidak perlu load dari blockchain jika sudah ada data di localStorage
-            // Tapi kita tetap bisa memanggil loadGroups() untuk sinkronisasi di latar belakang
-            // Untuk saat ini, kita skip agar tidak ada loading yang mengganggu
             return;
           }
         } catch (e) {}
@@ -181,6 +174,31 @@ function App() {
     }
   };
 
+  // ===== FUNGSI UNTUK MENANDAI MEMBER SUDAH BAYAR =====
+  const markMemberPaid = (groupId: string, memberAddress: string) => {
+    setGroups((prev) =>
+      prev.map((g) =>
+        g.id === groupId
+          ? {
+              ...g,
+              members: g.members.map((m) =>
+                m.address === memberAddress ? { ...m, paid: true } : m
+              ),
+            }
+          : g
+      )
+    );
+    // Tambahkan activity
+    const group = groups.find(g => g.id === groupId);
+    if (group) {
+      addActivity({
+        type: 'share_paid',
+        title: `You paid your share for "${group.name}"`,
+        description: `Amount: ${group.members.find(m => m.address === memberAddress)?.share} XLM`,
+      });
+    }
+  };
+
   // ===== FUNGSI UNTUK BUKA HALAMAN DETAIL GRUP =====
   const handleViewGroup = (groupId: string) => {
     setSelectedGroupId(groupId);
@@ -228,8 +246,6 @@ function App() {
     setAddress(null);
     setWalletStatus("idle");
     setPage("landing");
-    // groups dan activities TIDAK direset, sehingga data tetap ada di state
-    // dan masih bisa diakses setelah login ulang dengan wallet yang sama
   }
 
   // ============================================================
@@ -275,7 +291,7 @@ function App() {
         address={address}
         group={selectedGroup}
         onAddMember={addMemberToGroup}
-        onActivityAdd={addActivity}
+        onMarkPaid={markMemberPaid}   // ← BARU
         onDisconnect={handleFullDisconnect}
         onGoHome={() => setPage("dashboard")}
         onGoGroups={() => setPage("groups")}
