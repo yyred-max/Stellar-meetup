@@ -9,10 +9,10 @@ import {
   Address,
 } from "@stellar/stellar-sdk";
 import { kit } from "./wallet";
-import { Group } from "../App"; // import tipe Group dari App
+import { Group, Member } from "../App";
 
 export const CONTRACT_ID =
-  "CBFCVRIAUNBRD5BIYX3AHP3RWMEKUQBN4L5GTLFJ4P76I2H6JMYB4PDF";
+  "CACVL5DDKQ3OQO7X3MDM5SQ7VDF4QKGE7KEJGZ46QL2R7XZHFOWGXAGH";
 
 export const RPC_URL =
   "https://soroban-testnet.stellar.org";
@@ -138,15 +138,42 @@ export async function callContract(
 
 /**
  * Mengambil semua grup milik owner tertentu.
- * Memanggil fungsi `get_groups` di smart contract.
+ * Karena kontrak get_groups tidak menerima parameter, kita ambil semua lalu filter.
  */
 export async function getGroups(owner: string): Promise<Group[]> {
   try {
-    // Konversi owner ke ScVal address
-    const ownerScVal = new Address(owner).toScVal();
-    const result = await viewContract("get_groups", [ownerScVal], owner);
+    // Panggil get_groups tanpa argumen (sesuai kontrak)
+    const result = await viewContract("get_groups", [], owner);
+    if (Array.isArray(result)) {
+      const allGroups = result.map((item: any) => ({
+        id: String(item.id),
+        name: String(item.name),
+        owner: String(item.owner),
+        totalShare: Number(item.total_share ?? item.totalShare),
+        members: (item.members || []).map((m: any) => ({
+          address: String(m.address),
+          share: Number(m.share),
+          paid: Boolean(m.paid),
+        })),
+      }));
+      // Filter berdasarkan owner
+      return allGroups.filter((g: Group) => g.owner === owner);
+    }
+    return [];
+  } catch (err) {
+    console.error("Error in getGroups:", err);
+    return [];
+  }
+}
 
-    // Asumsikan result adalah array of objects dengan struktur Group
+/**
+ * Mengambil semua grup di mana alamat tertentu terdaftar sebagai member.
+ * Memanggil fungsi get_groups_by_member di smart contract.
+ */
+export async function getGroupsByMember(member: string): Promise<Group[]> {
+  try {
+    const memberScVal = new Address(member).toScVal();
+    const result = await viewContract("get_groups_by_member", [memberScVal], member);
     if (Array.isArray(result)) {
       return result.map((item: any) => ({
         id: String(item.id),
@@ -162,7 +189,7 @@ export async function getGroups(owner: string): Promise<Group[]> {
     }
     return [];
   } catch (err) {
-    console.error("Error in getGroups:", err);
+    console.error("Error in getGroupsByMember:", err);
     return [];
   }
 }

@@ -204,6 +204,58 @@ impl SplitBillContract {
 
         result
     }
+
+    // ================================================================
+    // 🆕 Fungsi baru: ambil semua grup yang diikuti oleh alamat tertentu
+    // ================================================================
+    pub fn get_groups_by_member(env: Env, member_address: Address) -> Vec<Group> {
+        // 1. Ambil semua member dari storage
+        let all_members: Vec<Member> = env
+            .storage()
+            .instance()
+            .get(&MEMBER_DATA)
+            .unwrap_or(Vec::new(&env));
+
+        // 2. Kumpulkan group_id yang mengandung alamat ini
+        let mut group_ids: Vec<u64> = Vec::new(&env);
+        for i in 0..all_members.len() {
+            let m = all_members.get(i).unwrap();
+            if m.address == member_address {
+                // Cegah duplikasi (satu address hanya satu entry per group)
+                let mut already_exists = false;
+                for j in 0..group_ids.len() {
+                    if group_ids.get(j).unwrap() == m.group_id {
+                        already_exists = true;
+                        break;
+                    }
+                }
+                if !already_exists {
+                    group_ids.push_back(m.group_id);
+                }
+            }
+        }
+
+        // 3. Ambil semua grup
+        let all_groups: Vec<Group> = env
+            .storage()
+            .instance()
+            .get(&GROUP_DATA)
+            .unwrap_or(Vec::new(&env));
+
+        // 4. Filter grup yang id-nya ada di group_ids
+        let mut result: Vec<Group> = Vec::new(&env);
+        for i in 0..all_groups.len() {
+            let g = all_groups.get(i).unwrap();
+            for j in 0..group_ids.len() {
+                if g.id == group_ids.get(j).unwrap() {
+                    result.push_back(g);
+                    break;
+                }
+            }
+        }
+
+        result
+    }
 }
 
 mod test;

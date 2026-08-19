@@ -5,7 +5,7 @@ import Dashboard from "./components/Dashboard";
 import Groups from "./components/Groups";
 import ActivityPage from "./components/Activity";
 import GroupDetail from "./components/GroupDetail";
-import { getGroups } from "./lib/contract";
+import { getGroups, getGroupsByMember } from "./lib/contract";
 import {
   IconWallet,
   IconCheck,
@@ -76,24 +76,30 @@ function App() {
     if (!address) return;
     setIsLoadingGroups(true);
     try {
-      // Coba ambil dari blockchain terlebih dahulu
-      const data = await getGroups(address);
+      // 1. Ambil grup yang dibuat oleh wallet ini (owner)
+      const ownedGroups = await getGroups(address);
+      // 2. Ambil grup di mana wallet ini terdaftar sebagai member
+      const memberGroups = await getGroupsByMember(address);
       
-      // Jika blockchain mengembalikan data (walau length 0, tetap set agar kosong)
-      setGroups(data);
+      // 3. Gabung & deduplikasi berdasarkan id
+      const mergedMap = new Map<string, Group>();
+      [...ownedGroups, ...memberGroups].forEach((g) => {
+        mergedMap.set(g.id, g);
+      });
+      const allGroups = Array.from(mergedMap.values());
       
-      // Simpan ke localStorage sebagai cache (untuk fallback saat offline / error)
-      if (data && data.length > 0) {
-        localStorage.setItem(`splitbill_groups_${address}`, JSON.stringify(data));
+      // 4. Set state dan simpan ke localStorage sebagai cache
+      setGroups(allGroups);
+      if (allGroups.length > 0) {
+        localStorage.setItem(`splitbill_groups_${address}`, JSON.stringify(allGroups));
       } else {
-        // Jika blockchain mengembalikan array kosong, kita tetap set kosong,
-        // tapi tidak perlu menimpa localStorage (biarkan cache lama jika ada)
-        // Tapi untuk konsistensi, kita bisa hapus cache atau biarkan saja.
-        // Lebih baik kita biarkan cache lama, karena mungkin blockchain kosong
-        // tapi user punya data di localStorage dari sebelumnya (misalnya transaksi
-        // belum di-sync ke blockchain). Namun untuk kasus ini, kita akan tetap
-        // mengutamakan blockchain, jadi kita set groups ke data dari blockchain.
-        // Kita tidak akan mengubah localStorage.
+        // Jika blockchain kosong, coba dari localStorage
+        const saved = localStorage.getItem(`splitbill_groups_${address}`);
+        if (saved) {
+          try {
+            setGroups(JSON.parse(saved));
+          } catch (e) {}
+        }
       }
     } catch (err) {
       console.error("Failed to load groups from blockchain:", err);
@@ -116,7 +122,6 @@ function App() {
   // ===== PANGGIL LOADGROUPS SAAT WALLET CONNECT =====
   useEffect(() => {
     if (walletStatus === "connected" && address) {
-      // Selalu panggil loadGroups untuk ambil dari blockchain, ignore cache localStorage
       loadGroups();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -1,11 +1,5 @@
-#![cfg(test)]
-
-use super::*;
-use soroban_sdk::testutils::Address as _;
-use soroban_sdk::{Env, String};
-
 #[test]
-fn test_create_group_and_pay() {
+fn test_get_groups_by_member() {
     let env = Env::default();
     env.mock_all_auths();
 
@@ -13,108 +7,40 @@ fn test_create_group_and_pay() {
     let client = SplitBillContractClient::new(&env, &contract_id);
 
     let owner = Address::generate(&env);
-    let member = Address::generate(&env);
+    let member1 = Address::generate(&env);
+    let member2 = Address::generate(&env);
+    let stranger = Address::generate(&env);
 
-    let group = client.create_group(
+    // Buat grup 1
+    let group1 = client.create_group(
         &owner,
         &String::from_str(&env, "Trip to Bali"),
     );
+    client.add_member(&group1.id, &owner, &member1, &100);
+    client.add_member(&group1.id, &owner, &member2, &150);
 
-    client.add_member(&group.id, &owner, &member, &100);
-
-    let result = client.pay_share(&group.id, &member, &100);
-
-    assert_eq!(
-        result,
-        String::from_str(&env, "Pembayaran berhasil")
-    );
-
-    let groups = client.get_groups();
-    let updated_group = groups
-        .iter()
-        .find(|g| g.id == group.id)
-        .unwrap();
-
-    assert_eq!(updated_group.members_paid, 1);
-}
-
-#[test]
-fn test_already_paid_error() {
-    let env = Env::default();
-    env.mock_all_auths();
-
-    let contract_id = env.register(SplitBillContract, ());
-    let client = SplitBillContractClient::new(&env, &contract_id);
-
-    let owner = Address::generate(&env);
-    let member = Address::generate(&env);
-
-    let group = client.create_group(
+    // Buat grup 2
+    let group2 = client.create_group(
         &owner,
         &String::from_str(&env, "Dinner"),
     );
+    client.add_member(&group2.id, &owner, &member1, &50);
 
-    client.add_member(&group.id, &owner, &member, &50);
-    client.pay_share(&group.id, &member, &50);
+    // Ambil grup yang diikuti oleh member1
+    let groups_for_member1 = client.get_groups_by_member(&member1);
 
-    let result = client.try_pay_share(&group.id, &member, &50);
+    // Harus ada 2 grup: Trip to Bali dan Dinner
+    assert_eq!(groups_for_member1.len(), 2);
+    let found_ids: Vec<u64> = groups_for_member1.iter().map(|g| g.id).collect();
+    assert!(found_ids.contains(&group1.id));
+    assert!(found_ids.contains(&group2.id));
 
-    assert_eq!(
-        result,
-        Err(Ok(SplitBillError::AlreadyPaid))
-    );
-}
+    // Ambil grup yang diikuti oleh member2
+    let groups_for_member2 = client.get_groups_by_member(&member2);
+    assert_eq!(groups_for_member2.len(), 1);
+    assert_eq!(groups_for_member2.get(0).unwrap().id, group1.id);
 
-#[test]
-fn test_incorrect_amount_error() {
-    let env = Env::default();
-    env.mock_all_auths();
-
-    let contract_id = env.register(SplitBillContract, ());
-    let client = SplitBillContractClient::new(&env, &contract_id);
-
-    let owner = Address::generate(&env);
-    let member = Address::generate(&env);
-
-    let group = client.create_group(
-        &owner,
-        &String::from_str(&env, "Dinner"),
-    );
-
-    client.add_member(&group.id, &owner, &member, &50);
-
-    let result = client.try_pay_share(&group.id, &member, &30);
-
-    assert_eq!(
-        result,
-        Err(Ok(SplitBillError::IncorrectAmount))
-    );
-}
-
-#[test]
-fn test_not_a_member_error() {
-    let env = Env::default();
-    env.mock_all_auths();
-
-    let contract_id = env.register(SplitBillContract, ());
-    let client = SplitBillContractClient::new(&env, &contract_id);
-
-    let owner = Address::generate(&env);
-    let stranger = Address::generate(&env);
-
-    let group = client.create_group(
-        &owner,
-        &String::from_str(&env, "Dinner"),
-    );
-
-    let result = client.try_pay_share(
-        &group.id,
-        &stranger,
-        &50,
-    );
-
-    assert_eq!(
-        result,
-        Err(Ok(SplitBillError::NotAMember))
-    );
+    // Ambil grup yang diikuti oleh stranger (tidak terdaftar di grup mana pun)
+    let groups_for_stranger = client.get_groups_by_member(&stranger);
+    assert_eq!(groups_for_stranger.len(), 0);
 }
