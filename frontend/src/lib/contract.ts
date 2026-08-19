@@ -30,6 +30,7 @@ export type TxStatus =
 /**
  * Fungsi untuk membaca data dari kontrak (view / read-only)
  * Tanpa menandatangani transaksi, hanya simulasi.
+ * Dengan error handling yang lebih baik.
  */
 export async function viewContract(
   method: string,
@@ -37,35 +38,42 @@ export async function viewContract(
   sourcePublicKey: string
 ) {
   if (!sourcePublicKey) {
-    throw new Error("Wallet belum terhubung.");
+    throw new Error("Wallet not connected.");
   }
 
-  const account = await server.getAccount(sourcePublicKey);
+  try {
+    const account = await server.getAccount(sourcePublicKey);
 
-  const tx = new TransactionBuilder(account, {
-    fee: BASE_FEE,
-    networkPassphrase: Networks.TESTNET,
-  })
-    .addOperation(contract.call(method, ...args))
-    .setTimeout(30)
-    .build();
+    const tx = new TransactionBuilder(account, {
+      fee: BASE_FEE,
+      networkPassphrase: Networks.TESTNET,
+    })
+      .addOperation(contract.call(method, ...args))
+      .setTimeout(30)
+      .build();
 
-  const simulated = await server.simulateTransaction(tx);
+    const simulated = await server.simulateTransaction(tx);
 
-  if (rpc.Api.isSimulationError(simulated)) {
-    throw new Error(`Simulation gagal: ${simulated.error}`);
+    if (rpc.Api.isSimulationError(simulated)) {
+      console.error(`Simulation error for ${method}:`, simulated.error);
+      throw new Error(`Simulation failed: ${simulated.error}`);
+    }
+
+    const result = simulated.result?.retval;
+    if (result) {
+      return scValToNative(result);
+    }
+    return null;
+  } catch (err) {
+    console.error(`Error in viewContract (${method}):`, err);
+    // Re-throw agar bisa ditangkap di pemanggil
+    throw err;
   }
-
-  // Ambil return value dari simulasi
-  const result = simulated.result?.retval;
-  if (result) {
-    return scValToNative(result);
-  }
-  return null;
 }
 
 /**
  * Menjalankan fungsi contract (write / mutasi).
+ * Dengan error handling yang lebih baik.
  */
 export async function callContract(
   method: string,
@@ -73,76 +81,84 @@ export async function callContract(
   sourcePublicKey: string
 ) {
   if (!sourcePublicKey) {
-    throw new Error("Wallet belum terhubung.");
+    throw new Error("Wallet not connected.");
   }
 
-  const account = await server.getAccount(sourcePublicKey);
+  try {
+    const account = await server.getAccount(sourcePublicKey);
 
-  let tx = new TransactionBuilder(account, {
-    fee: BASE_FEE,
-    networkPassphrase: Networks.TESTNET,
-  })
-    .addOperation(contract.call(method, ...args))
-    .setTimeout(30)
-    .build();
+    let tx = new TransactionBuilder(account, {
+      fee: BASE_FEE,
+      networkPassphrase: Networks.TESTNET,
+    })
+      .addOperation(contract.call(method, ...args))
+      .setTimeout(30)
+      .build();
 
-  const simulated = await server.simulateTransaction(tx);
+    const simulated = await server.simulateTransaction(tx);
 
-  if (rpc.Api.isSimulationError(simulated)) {
-    throw new Error(`Simulation gagal: ${simulated.error}`);
+    if (rpc.Api.isSimulationError(simulated)) {
+      console.error(`Simulation error for ${method}:`, simulated.error);
+      throw new Error(`Simulation failed: ${simulated.error}`);
+    }
+
+    tx = rpc.assembleTransaction(tx, simulated).build();
+
+    const { signedTxXdr } = await kit.signTransaction(tx.toXDR(), {
+      networkPassphrase: Networks.TESTNET,
+    });
+
+    if (!signedTxXdr) {
+      throw new Error("Wallet did not return signed transaction.");
+    }
+
+    const signedTx = TransactionBuilder.fromXDR(signedTxXdr, Networks.TESTNET);
+
+    const sendResponse = await server.sendTransaction(signedTx);
+
+    if (sendResponse.status === "ERROR") {
+      throw new Error("Transaction rejected by Stellar network.");
+    }
+
+    const txHash = sendResponse.hash;
+
+    let response = await server.getTransaction(txHash);
+    let attempts = 0;
+    const maxAttempts = 20;
+
+    while (response.status === "NOT_FOUND" && attempts < maxAttempts) {
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      response = await server.getTransaction(txHash);
+      attempts++;
+    }
+
+    if (response.status === "SUCCESS") {
+      const result = response.returnValue ? scValToNative(response.returnValue) : null;
+      return {
+        hash: txHash,
+        result,
+      };
+    }
+
+    throw new Error(`Transaction failed with status: ${response.status}`);
+  } catch (err) {
+    console.error(`Error in callContract (${method}):`, err);
+    throw err;
   }
-
-  tx = rpc.assembleTransaction(tx, simulated).build();
-
-  const { signedTxXdr } = await kit.signTransaction(tx.toXDR(), {
-    networkPassphrase: Networks.TESTNET,
-  });
-
-  if (!signedTxXdr) {
-    throw new Error(
-      "Wallet tidak mengembalikan transaksi yang sudah ditandatangani."
-    );
-  }
-
-  const signedTx = TransactionBuilder.fromXDR(signedTxXdr, Networks.TESTNET);
-
-  const sendResponse = await server.sendTransaction(signedTx);
-
-  if (sendResponse.status === "ERROR") {
-    throw new Error("Transaksi ditolak oleh jaringan Stellar.");
-  }
-
-  const txHash = sendResponse.hash;
-
-  let response = await server.getTransaction(txHash);
-
-  let attempts = 0;
-  const maxAttempts = 20;
-
-  while (response.status === "NOT_FOUND" && attempts < maxAttempts) {
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    response = await server.getTransaction(txHash);
-    attempts++;
-  }
-
-  if (response.status === "SUCCESS") {
-    const result = response.returnValue ? scValToNative(response.returnValue) : null;
-    return {
-      hash: txHash,
-      result,
-    };
-  }
-
-  throw new Error(`Transaksi gagal dengan status: ${response.status}`);
 }
 
 /**
  * Mengambil semua grup milik owner tertentu.
  * Karena kontrak get_groups tidak menerima parameter, kita ambil semua lalu filter.
+ * Dengan error handling yang lebih baik.
  */
 export async function getGroups(owner: string): Promise<Group[]> {
+  if (!owner) {
+    console.warn("getGroups called without owner");
+    return [];
+  }
   try {
-    // Panggil get_groups tanpa argumen (sesuai kontrak)
+    console.log(`🔍 getGroups: fetching for owner ${owner.slice(0,6)}...`);
     const result = await viewContract("get_groups", [], owner);
     if (Array.isArray(result)) {
       const allGroups = result.map((item: any) => ({
@@ -156,12 +172,14 @@ export async function getGroups(owner: string): Promise<Group[]> {
           paid: Boolean(m.paid),
         })),
       }));
-      // Filter berdasarkan owner
-      return allGroups.filter((g: Group) => g.owner === owner);
+      const filtered = allGroups.filter((g: Group) => g.owner === owner);
+      console.log(`✅ getGroups: found ${filtered.length} groups owned by this address`);
+      return filtered;
     }
+    console.warn("⚠️ getGroups: result is not an array");
     return [];
   } catch (err) {
-    console.error("Error in getGroups:", err);
+    console.error("❌ Error in getGroups:", err);
     return [];
   }
 }
@@ -169,13 +187,19 @@ export async function getGroups(owner: string): Promise<Group[]> {
 /**
  * Mengambil semua grup di mana alamat tertentu terdaftar sebagai member.
  * Memanggil fungsi get_groups_by_member di smart contract.
+ * Dengan error handling yang lebih baik.
  */
 export async function getGroupsByMember(member: string): Promise<Group[]> {
+  if (!member) {
+    console.warn("getGroupsByMember called without member address");
+    return [];
+  }
   try {
+    console.log(`🔍 getGroupsByMember: fetching for member ${member.slice(0,6)}...`);
     const memberScVal = new Address(member).toScVal();
     const result = await viewContract("get_groups_by_member", [memberScVal], member);
     if (Array.isArray(result)) {
-      return result.map((item: any) => ({
+      const groups = result.map((item: any) => ({
         id: String(item.id),
         name: String(item.name),
         owner: String(item.owner),
@@ -186,10 +210,14 @@ export async function getGroupsByMember(member: string): Promise<Group[]> {
           paid: Boolean(m.paid),
         })),
       }));
+      console.log(`✅ getGroupsByMember: found ${groups.length} groups where this address is a member`);
+      return groups;
     }
+    console.warn("⚠️ getGroupsByMember: result is not an array");
     return [];
   } catch (err) {
-    console.error("Error in getGroupsByMember:", err);
+    console.error("❌ Error in getGroupsByMember:", err);
+    // Jangan re-throw, kembalikan array kosong agar UI tidak error
     return [];
   }
 }
@@ -199,10 +227,10 @@ export async function getGroupsByMember(member: string): Promise<Group[]> {
  */
 export async function createGroup(owner: string, name: string) {
   if (!owner) {
-    throw new Error("Wallet belum terhubung.");
+    throw new Error("Wallet not connected.");
   }
   if (!name.trim()) {
-    throw new Error("Nama group tidak boleh kosong.");
+    throw new Error("Group name cannot be empty.");
   }
 
   return callContract(
@@ -225,16 +253,16 @@ export async function addMember(
   shareAmount: bigint
 ) {
   if (!owner) {
-    throw new Error("Wallet owner belum terhubung.");
+    throw new Error("Owner wallet not connected.");
   }
   if (!member) {
-    throw new Error("Alamat member wajib diisi.");
+    throw new Error("Member address required.");
   }
   if (groupId <= 0n) {
-    throw new Error("Group ID harus lebih besar dari 0.");
+    throw new Error("Group ID must be greater than 0.");
   }
   if (shareAmount <= 0n) {
-    throw new Error("Share amount harus lebih besar dari 0.");
+    throw new Error("Share amount must be greater than 0.");
   }
 
   return callContract(
@@ -258,13 +286,13 @@ export async function payShare(
   amount: bigint
 ) {
   if (!member) {
-    throw new Error("Wallet belum terhubung.");
+    throw new Error("Wallet not connected.");
   }
   if (groupId <= 0n) {
-    throw new Error("Group ID harus lebih besar dari 0.");
+    throw new Error("Group ID must be greater than 0.");
   }
   if (amount <= 0n) {
-    throw new Error("Amount harus lebih besar dari 0.");
+    throw new Error("Amount must be greater than 0.");
   }
 
   return callContract(

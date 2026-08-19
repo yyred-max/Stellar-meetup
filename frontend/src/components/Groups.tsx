@@ -1,7 +1,7 @@
 // src/components/Groups.tsx
 import { useMemo, useState } from "react";
 import CreateGroupModal from "./CreateGroupModal";
-import { IconPlus, IconLogout, IconSearch, IconChevronDown, IconUsers } from "./Icons";
+import { IconPlus, IconLogout, IconSearch, IconChevronDown, IconUsers, IconSpinner } from "./Icons";
 
 // ============================================================
 //  TIPE DATA (sama dengan Dashboard)
@@ -27,10 +27,13 @@ interface GroupsProps {
   address: string | null;
   groups: Group[];
   onAddGroup: (group: Group) => void;
-  onViewGroup: (groupId: string) => void; // ← BARU
+  onViewGroup: (groupId: string) => void;
   onDisconnect: () => void;
   onGoHome: () => void;
   onGoActivity: () => void;
+  isLoading?: boolean;        // ← baru
+  error?: string | null;      // ← baru
+  onRefresh?: () => void;     // ← baru
 }
 
 type Status = "Active" | "Pending" | "Completed";
@@ -39,10 +42,13 @@ export default function Groups({
   address,
   groups,
   onAddGroup,
-  onViewGroup, // ← BARU
+  onViewGroup,
   onDisconnect,
   onGoHome,
   onGoActivity,
+  isLoading = false,
+  error = null,
+  onRefresh,
 }: GroupsProps) {
   const tab: "Dashboard" | "Groups" | "Activity" = "Groups";
   const [search, setSearch] = useState("");
@@ -92,6 +98,84 @@ export default function Groups({
     onAddGroup(newGroup);
     setShowCreateModal(false);
   };
+
+  // ===== RENDER KONDISI =====
+  let content;
+  if (isLoading) {
+    content = (
+      <div className="groups-loading">
+        <IconSpinner size={32} />
+        <p>Loading your groups...</p>
+      </div>
+    );
+  } else if (error) {
+    content = (
+      <div className="groups-error">
+        <p>⚠️ {error}</p>
+        {onRefresh && (
+          <button className="btn-secondary" onClick={onRefresh}>
+            🔄 Retry
+          </button>
+        )}
+      </div>
+    );
+  } else if (filtered.length === 0) {
+    content = <p className="groups-empty">No groups match your search/filter.</p>;
+  } else {
+    content = (
+      <section className="groups-grid">
+        {filtered.map((g) => (
+          <div
+            className={`group-card ${g.status === "Completed" ? "completed" : ""}`}
+            key={g.id}
+          >
+            <div className="group-card-top">
+              <div>
+                <span className="group-name-lg">{g.name}</span>
+                <span className="group-meta">
+                  <IconUsers /> {g.members} members
+                </span>
+              </div>
+              <span className={`status-pill status-${g.status.toLowerCase()}`}>
+                {g.status}
+              </span>
+            </div>
+
+            <div className="group-amounts">
+              <div>
+                <span>TOTAL AMOUNT</span>
+                <strong>{g.total.toLocaleString()} XLM</strong>
+              </div>
+              <div className="align-right">
+                <span>YOUR SHARE</span>
+                <strong className="share-value">{g.share.toLocaleString()} XLM</strong>
+              </div>
+            </div>
+
+            <div className="group-status-row">
+              <span>Progress</span>
+              <span className={g.percent === 100 ? "progress-complete-text" : "progress-text"}>
+                {Math.round(g.percent)}% Paid
+              </span>
+            </div>
+            <div className="progress-track">
+              <div
+                className={`progress-fill ${g.percent === 100 ? "is-complete" : ""}`}
+                style={{ width: `${g.percent}%` }}
+              />
+            </div>
+
+            <button
+              className="btn-view-details"
+              onClick={() => onViewGroup(g.id)}
+            >
+              View Details
+            </button>
+          </div>
+        ))}
+      </section>
+    );
+  }
 
   return (
     <div className="dashboard groups-page">
@@ -169,62 +253,8 @@ export default function Groups({
         </div>
       </section>
 
-      {/* ===== GRID ===== */}
-      {filtered.length === 0 ? (
-        <p className="groups-empty">No groups match your search/filter.</p>
-      ) : (
-        <section className="groups-grid">
-          {filtered.map((g) => (
-            <div
-              className={`group-card ${g.status === "Completed" ? "completed" : ""}`}
-              key={g.id}
-            >
-              <div className="group-card-top">
-                <div>
-                  <span className="group-name-lg">{g.name}</span>
-                  <span className="group-meta">
-                    <IconUsers /> {g.members} members
-                  </span>
-                </div>
-                <span className={`status-pill status-${g.status.toLowerCase()}`}>
-                  {g.status}
-                </span>
-              </div>
-
-              <div className="group-amounts">
-                <div>
-                  <span>TOTAL AMOUNT</span>
-                  <strong>{g.total.toLocaleString()} XLM</strong>
-                </div>
-                <div className="align-right">
-                  <span>YOUR SHARE</span>
-                  <strong className="share-value">{g.share.toLocaleString()} XLM</strong>
-                </div>
-              </div>
-
-              <div className="group-status-row">
-                <span>Progress</span>
-                <span className={g.percent === 100 ? "progress-complete-text" : "progress-text"}>
-                  {Math.round(g.percent)}% Paid
-                </span>
-              </div>
-              <div className="progress-track">
-                <div
-                  className={`progress-fill ${g.percent === 100 ? "is-complete" : ""}`}
-                  style={{ width: `${g.percent}%` }}
-                />
-              </div>
-
-              <button
-                className="btn-view-details"
-                onClick={() => onViewGroup(g.id)}
-                >
-                View Details
-            </button>
-            </div>
-          ))}
-        </section>
-      )}
+      {/* ===== CONTENT ===== */}
+      {content}
 
       {/* ===== FOOTER ===== */}
       <footer className="app-footer groups-footer">

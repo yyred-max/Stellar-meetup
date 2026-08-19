@@ -73,37 +73,40 @@ function App() {
 
   // ===== FUNGSI LOAD DATA DARI BLOCKCHAIN (PRIORITAS UTAMA) =====
   const loadGroups = async () => {
-    if (!address) return;
+    if (!address) {
+      console.warn("⛔ loadGroups: address is null");
+      return;
+    }
+    console.log("🔄 loadGroups for address:", address);
     setIsLoadingGroups(true);
     try {
       // 1. Ambil grup yang dibuat oleh wallet ini (owner)
       const ownedGroups = await getGroups(address);
+      console.log("📦 ownedGroups:", ownedGroups);
       // 2. Ambil grup di mana wallet ini terdaftar sebagai member
       const memberGroups = await getGroupsByMember(address);
-      
+      console.log("📦 memberGroups:", memberGroups);
+
       // 3. Gabung & deduplikasi berdasarkan id
       const mergedMap = new Map<string, Group>();
       [...ownedGroups, ...memberGroups].forEach((g) => {
         mergedMap.set(g.id, g);
       });
       const allGroups = Array.from(mergedMap.values());
-      
+      console.log("📦 allGroups merged:", allGroups);
+
       // 4. Set state dan simpan ke localStorage sebagai cache
       setGroups(allGroups);
+      // Simpan cache hanya jika data tidak kosong, agar tidak menimpa cache yang sudah ada
       if (allGroups.length > 0) {
         localStorage.setItem(`splitbill_groups_${address}`, JSON.stringify(allGroups));
       } else {
-        // Jika blockchain kosong, coba dari localStorage
-        const saved = localStorage.getItem(`splitbill_groups_${address}`);
-        if (saved) {
-          try {
-            setGroups(JSON.parse(saved));
-          } catch (e) {}
-        }
+        // Jika blockchain mengembalikan array kosong, kita hapus cache untuk menghindari data usang
+        localStorage.removeItem(`splitbill_groups_${address}`);
       }
     } catch (err) {
-      console.error("Failed to load groups from blockchain:", err);
-      // Fallback ke localStorage jika blockchain gagal
+      console.error("❌ Failed to load groups from blockchain:", err);
+      // Fallback ke localStorage hanya jika terjadi error (bukan jika blockchain mengembalikan kosong)
       const saved = localStorage.getItem(`splitbill_groups_${address}`);
       if (saved) {
         try {
@@ -275,6 +278,9 @@ function App() {
       <Groups
         address={address}
         groups={groups}
+        isLoading={isLoadingGroups}
+        error={errorMsg}                 // atau state error khusus
+        onRefresh={loadGroups}
         onAddGroup={addGroup}
         onViewGroup={handleViewGroup}
         onDisconnect={handleFullDisconnect}
