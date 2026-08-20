@@ -8,7 +8,7 @@ import {
   IconUserPlus,
 } from "./Icons";
 import { createGroup } from "../lib/contract";
-import type { Activity } from "../App"; // import tipe dari App
+import type { Activity } from "../App";
 
 // ============================================================
 //  TIPE DATA (import dari App atau definisikan ulang)
@@ -33,7 +33,7 @@ export interface Group {
 interface DashboardProps {
   address: string | null;
   groups: Group[];
-  activities: Activity[];          // ← tambahkan
+  activities: Activity[];
   onAddGroup: (group: Group) => void;
   onDisconnect: () => void;
   onGoGroups: () => void;
@@ -51,7 +51,7 @@ function getGreeting() {
 export default function Dashboard({
   address,
   groups,
-  activities,          // ← terima activities
+  activities,
   onAddGroup,
   onDisconnect,
   onGoGroups,
@@ -80,9 +80,10 @@ export default function Dashboard({
   const userName = address ? address.slice(0, 6) : "Yuli";
 
   // === HANDLER SAAT GROUP BERHASIL DIBUAT ===
-  const handleGroupCreated = (data: { name: string; hash: string }) => {
+  // 🔥 Ubah: menerima groupId dari kontrak
+  const handleGroupCreated = (data: { name: string; hash: string; groupId?: string }) => {
     const newGroup: Group = {
-      id: data.hash,
+      id: data.groupId || data.hash, // prioritaskan groupId dari kontrak
       name: data.name,
       owner: address!,
       totalShare: 0,
@@ -259,10 +260,11 @@ export default function Dashboard({
           address={address}
           onClose={() => setShowCreateModal(false)}
           onSuccess={handleGroupCreated}
+          // 🔥 Perbaiki: kirim result juga agar groupId bisa diambil
           onCreateGroup={async (data) => {
             if (!address) throw new Error("Wallet not connected");
             const result = await createGroup(address, data.name);
-            return { hash: result.hash };
+            return { hash: result.hash, result: result.result };
           }}
           onViewGroup={() => {
             setShowCreateModal(false);

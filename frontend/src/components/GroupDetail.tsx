@@ -5,7 +5,7 @@ import PayShareModal from "./PayShareModal";
 import { IconPlus, IconLogout, IconUsers } from "./Icons";
 import type { Group, Member } from "./Groups";
 import type { Activity } from "../App";
-import { addMember } from "../lib/contract"; // 🔥 import fungsi kontrak
+import { addMember } from "../lib/contract";
 
 interface GroupDetailProps {
   address: string | null;
@@ -46,16 +46,31 @@ export default function GroupDetail({
     onAddMember(group.id, member);
   };
 
-  // 🔥 Fungsi untuk memanggil kontrak add_member
+  // 🔥 Fungsi untuk memanggil kontrak add_member dengan handling ID yang aman
   const handleAddMemberContract = async (memberAddress: string, share: number) => {
     if (!address) throw new Error("Wallet not connected");
-    // group.id adalah string, konversi ke BigInt
-    const groupId = BigInt(group.id);
-    // owner dari group (pemilik grup)
+
+    // Pastikan group.id bisa dikonversi ke BigInt
+    let groupId: bigint;
+    try {
+      groupId = BigInt(group.id);
+    } catch (e) {
+      console.error("❌ Invalid group.id for contract call:", group.id);
+      throw new Error("Invalid group ID. Please try creating a new group.");
+    }
+
+    if (groupId <= 0n) {
+      throw new Error("Group ID must be a positive number.");
+    }
+
     const owner = group.owner;
-    // Share dalam XLM (decimal), konversi ke stroop (1 XLM = 10.000.000 stroop)
-    // Karena kontrak menerima i128 dalam satuan stroop
+    // Konversi share (XLM desimal) ke stroop (1 XLM = 10.000.000 stroop)
     const shareAmount = BigInt(Math.round(share * 10_000_000));
+    if (shareAmount <= 0n) {
+      throw new Error("Share amount must be greater than 0.");
+    }
+
+    console.log(`📡 Calling addMember with groupId=${groupId.toString()}, owner=${owner}, member=${memberAddress}, share=${shareAmount.toString()}`);
     const result = await addMember(groupId, owner, memberAddress, shareAmount);
     return { hash: result.hash };
   };
@@ -244,7 +259,7 @@ export default function GroupDetail({
           onAdded={handleMemberAdded}
           onViewGroup={() => setShowAddMember(false)}
           onActivityAdd={onActivityAdd}
-          onAddMember={handleAddMemberContract} // 🔥 sambungkan ke kontrak
+          onAddMember={handleAddMemberContract}
         />
       )}
 

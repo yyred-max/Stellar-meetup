@@ -18,18 +18,15 @@ interface CreateGroupModalProps {
   /**
    * Dipanggil setelah transaksi berhasil, sebelum modal menampilkan success.
    * Cocok untuk menyimpan grup ke state di komponen induk.
+   * Sekarang juga menerima groupId yang dikembalikan kontrak.
    */
-  onSuccess?: (data: { name: string; hash: string }) => void;
-  /**
-   * Dipanggil setelah transaksi berhasil untuk menambahkan aktivitas ke feed.
-   */
+  onSuccess?: (data: { name: string; hash: string; groupId?: string }) => void;
   onActivityAdd?: (activity: Omit<Activity, "id" | "timestamp">) => void;
   /**
    * 🔥 Fungsi untuk memanggil kontrak Soroban yang sebenarnya.
-   * Jika tidak diberikan, modal akan menggunakan simulasi (hanya untuk testing UI).
-   * Pastikan untuk memberikan fungsi ini di komponen induk agar transaksi nyata terjadi.
+   * Diharapkan mengembalikan { hash, result } di mana result berisi return value kontrak.
    */
-  onCreateGroup?: (data: { name: string; description: string }) => Promise<{ hash: string }>;
+  onCreateGroup?: (data: { name: string; description: string }) => Promise<{ hash: string; result?: any }>;
 }
 
 type Step = "form" | "processing" | "success";
@@ -40,13 +37,9 @@ function delay(ms: number) {
 
 /**
  * Simulasi pembuatan grup (hanya untuk testing UI).
- * Akan menampilkan peringatan di console jika digunakan.
  */
-async function simulateCreateGroup(): Promise<{ hash: string }> {
-  console.warn(
-    "⚠️ [CreateGroupModal] Using SIMULATION mode. " +
-    "Pass `onCreateGroup` prop to use real contract call."
-  );
+async function simulateCreateGroup(): Promise<{ hash: string; result?: any }> {
+  console.warn("⚠️ [CreateGroupModal] Using SIMULATION mode.");
   await delay(1400);
   const hash = Array.from({ length: 12 }, () =>
     "0123456789ABCDEF"[Math.floor(Math.random() * 16)]
@@ -79,7 +72,6 @@ export default function CreateGroupModal({
     setSubStep(1);
 
     try {
-      // Gunakan onCreateGroup jika diberikan, jika tidak gunakan simulasi
       const result = await (onCreateGroup
         ? onCreateGroup({ name, description })
         : simulateCreateGroup());
@@ -89,10 +81,18 @@ export default function CreateGroupModal({
 
       setTxHash(result.hash);
 
-      // Panggil callback onSuccess agar komponen induk bisa simpan grup ke state
-      onSuccess?.({ name, hash: result.hash });
+      // 🔥 Ekstrak groupId dari result.result (return value kontrak)
+      let groupId: string | undefined;
+      if (result.result && typeof result.result === 'object' && 'id' in result.result) {
+        groupId = String(result.result.id);
+        console.log("✅ Group ID from contract:", groupId);
+      } else {
+        console.warn("⚠️ No groupId found in contract result, using hash as fallback");
+        groupId = result.hash; // fallback
+      }
 
-      // Panggil onActivityAdd untuk menambahkan aktivitas ke feed
+      onSuccess?.({ name, hash: result.hash, groupId });
+
       onActivityAdd?.({
         type: "group_created",
         title: `You created group "${name}"`,
@@ -102,7 +102,6 @@ export default function CreateGroupModal({
       setStep("success");
     } catch (error) {
       console.error("Failed to create group:", error);
-      // Tampilkan pesan error yang lebih informatif jika memungkinkan
       const errorMessage = error instanceof Error ? error.message : "Gagal membuat grup. Silakan coba lagi.";
       alert(errorMessage);
       setStep("form");
