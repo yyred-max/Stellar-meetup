@@ -161,8 +161,8 @@ export default function GroupDetail({
         <div style={{ display: 'flex', gap: '8px' }}>
           {isOwner && (
             <>
-              <button className="btn-secondary" onClick={() => setIsEditing(true)}>✏️ Edit</button>
-              <button className="btn-secondary" onClick={handleDelete} style={{ color: 'var(--red)' }}>🗑️ Delete</button>
+              <button className="btn-secondary" onClick={() => setIsEditing(true)}>Edit</button>
+              <button className="btn-secondary" onClick={handleDelete} style={{ color: 'var(--red)' }}>Delete</button>
             </>
           )}
           <button className="btn-primary btn-add-member" onClick={() => setShowAddMember(true)}>
