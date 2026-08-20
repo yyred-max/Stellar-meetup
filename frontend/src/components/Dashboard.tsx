@@ -1,5 +1,6 @@
 // src/components/Dashboard.tsx
 import { useState } from "react";
+import { createGroup } from "../lib/contract";
 import CreateGroupModal from "./CreateGroupModal";
 import {
   IconPlus,
@@ -258,6 +259,11 @@ export default function Dashboard({
           address={address}
           onClose={() => setShowCreateModal(false)}
           onSuccess={handleGroupCreated}
+          onCreateGroup={async (data) => {
+            if (!address) throw new Error("Wallet not connected");
+            const result = await createGroup(address, data.name);
+            return { hash: result.hash };
+          }}
           onViewGroup={() => {
             setShowCreateModal(false);
             onGoGroups();

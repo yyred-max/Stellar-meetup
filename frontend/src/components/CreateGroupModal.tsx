@@ -9,7 +9,7 @@ import {
   IconCopy,
   IconExternalLink,
 } from "./Icons";
-import type { Activity } from "../App"; // import tipe Activity
+import type { Activity } from "../App";
 
 interface CreateGroupModalProps {
   address: string | null;
@@ -23,10 +23,11 @@ interface CreateGroupModalProps {
   /**
    * Dipanggil setelah transaksi berhasil untuk menambahkan aktivitas ke feed.
    */
-  onActivityAdd?: (activity: Omit<Activity, 'id' | 'timestamp'>) => void;
+  onActivityAdd?: (activity: Omit<Activity, "id" | "timestamp">) => void;
   /**
-   * Ganti dengan pemanggilan kontrak Soroban yang sebenarnya (mis. invoke create_group).
-   * Default-nya cuma simulasi delay supaya alur UI bisa langsung dicoba.
+   * 🔥 Fungsi untuk memanggil kontrak Soroban yang sebenarnya.
+   * Jika tidak diberikan, modal akan menggunakan simulasi (hanya untuk testing UI).
+   * Pastikan untuk memberikan fungsi ini di komponen induk agar transaksi nyata terjadi.
    */
   onCreateGroup?: (data: { name: string; description: string }) => Promise<{ hash: string }>;
 }
@@ -37,7 +38,15 @@ function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/**
+ * Simulasi pembuatan grup (hanya untuk testing UI).
+ * Akan menampilkan peringatan di console jika digunakan.
+ */
 async function simulateCreateGroup(): Promise<{ hash: string }> {
+  console.warn(
+    "⚠️ [CreateGroupModal] Using SIMULATION mode. " +
+    "Pass `onCreateGroup` prop to use real contract call."
+  );
   await delay(1400);
   const hash = Array.from({ length: 12 }, () =>
     "0123456789ABCDEF"[Math.floor(Math.random() * 16)]
@@ -50,11 +59,11 @@ export default function CreateGroupModal({
   onClose,
   onViewGroup,
   onSuccess,
-  onActivityAdd, // ← tambahkan
+  onActivityAdd,
   onCreateGroup,
 }: CreateGroupModalProps) {
   const [step, setStep] = useState<Step>("form");
-  const [subStep, setSubStep] = useState(0); // 0 preparing, 1 waiting wallet, 2 confirming
+  const [subStep, setSubStep] = useState(0);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [txHash, setTxHash] = useState("");
@@ -70,6 +79,7 @@ export default function CreateGroupModal({
     setSubStep(1);
 
     try {
+      // Gunakan onCreateGroup jika diberikan, jika tidak gunakan simulasi
       const result = await (onCreateGroup
         ? onCreateGroup({ name, description })
         : simulateCreateGroup());
@@ -77,15 +87,14 @@ export default function CreateGroupModal({
       setSubStep(2);
       await delay(500);
 
-      // ✅ Set hash agar tampil di success UI
       setTxHash(result.hash);
 
-      // ✅ Panggil onSuccess agar komponen induk bisa simpan grup ke state
+      // Panggil callback onSuccess agar komponen induk bisa simpan grup ke state
       onSuccess?.({ name, hash: result.hash });
 
-      // ✅ Panggil onActivityAdd untuk menambahkan aktivitas ke feed
+      // Panggil onActivityAdd untuk menambahkan aktivitas ke feed
       onActivityAdd?.({
-        type: 'group_created',
+        type: "group_created",
         title: `You created group "${name}"`,
         description: `Transaction: ${result.hash}`,
       });
@@ -93,7 +102,9 @@ export default function CreateGroupModal({
       setStep("success");
     } catch (error) {
       console.error("Failed to create group:", error);
-      alert("Gagal membuat grup. Silakan coba lagi.");
+      // Tampilkan pesan error yang lebih informatif jika memungkinkan
+      const errorMessage = error instanceof Error ? error.message : "Gagal membuat grup. Silakan coba lagi.";
+      alert(errorMessage);
       setStep("form");
     }
   }
