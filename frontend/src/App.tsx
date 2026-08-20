@@ -341,6 +341,8 @@ function App() {
         onGoHome={() => setPage("dashboard")}
         onGoGroups={() => setPage("groups")}
         onGoActivity={() => setPage("activity")}
+        onActivityAdd={addActivity}
+        onRefresh={loadGroups} // 🔥 tambahkan ini
       />
     );
   }

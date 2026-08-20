@@ -5,7 +5,7 @@ import PayShareModal from "./PayShareModal";
 import { IconPlus, IconLogout, IconUsers } from "./Icons";
 import type { Group, Member } from "./Groups";
 import type { Activity } from "../App";
-import { addMember, payShare } from "../lib/contract";
+import { addMember, payShare, updateGroup, deleteGroup } from "../lib/contract";
 
 interface GroupDetailProps {
   address: string | null;
@@ -17,6 +17,7 @@ interface GroupDetailProps {
   onGoGroups: () => void;
   onGoActivity: () => void;
   onActivityAdd?: (activity: Omit<Activity, 'id' | 'timestamp'>) => void;
+  onRefresh?: () => void; // tambahan untuk refresh data setelah edit/delete
 }
 
 function shortAddr(addr: string) {
@@ -34,9 +35,12 @@ export default function GroupDetail({
   onGoGroups,
   onGoActivity,
   onActivityAdd,
+  onRefresh,
 }: GroupDetailProps) {
   const [showAddMember, setShowAddMember] = useState(false);
   const [payTarget, setPayTarget] = useState<Member | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState(group.name);
 
   const totalMembers = group.members.length;
   const paidCount = group.members.filter((m) => m.paid).length;
@@ -55,7 +59,6 @@ export default function GroupDetail({
       throw new Error("Invalid group ID. Please create a new group.");
     }
     if (groupId <= 0n) throw new Error("Invalid group ID");
-    // 🔥 HAPUS perkalian 10^7 – kirim langsung dalam XLM
     const shareAmount = BigInt(Math.round(share));
     if (shareAmount <= 0n) throw new Error("Share must be > 0");
     const result = await addMember(groupId, group.owner, memberAddress, shareAmount);
@@ -70,12 +73,58 @@ export default function GroupDetail({
     } catch (e) {
       throw new Error("Invalid group ID");
     }
-    // 🔥 HAPUS perkalian 10^7
     const amountStroop = BigInt(Math.round(amount));
     if (amountStroop <= 0n) throw new Error("Amount must be > 0");
     const result = await payShare(groupId, memberAddress, amountStroop);
     return { hash: result.hash };
   };
+
+  const handleEdit = async () => {
+    if (!address) return;
+    if (address !== group.owner) {
+      alert("Only the group owner can edit.");
+      return;
+    }
+    try {
+      const groupId = BigInt(group.id);
+      await updateGroup(groupId, address, editName);
+      onActivityAdd?.({
+        type: 'group_created', // kita pakai type yang ada, atau kita bisa tambahkan type baru, tapi kita pakai existing
+        title: `Group renamed to "${editName}"`,
+        description: `Group ID: ${group.id}`,
+      });
+      setIsEditing(false);
+      if (onRefresh) onRefresh();
+      // optional navigate to groups to see updated list
+      onGoGroups();
+    } catch (err: any) {
+      alert(err.message || "Failed to update group.");
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!address) return;
+    if (address !== group.owner) {
+      alert("Only the group owner can delete.");
+      return;
+    }
+    if (!confirm(`Delete group "${group.name}"? This action cannot be undone.`)) return;
+    try {
+      const groupId = BigInt(group.id);
+      await deleteGroup(groupId, address);
+      onActivityAdd?.({
+        type: 'group_created',
+        title: `Group "${group.name}" deleted`,
+        description: `Group ID: ${group.id}`,
+      });
+      if (onRefresh) onRefresh();
+      onGoGroups(); // navigate back to groups
+    } catch (err: any) {
+      alert(err.message || "Failed to delete group.");
+    }
+  };
+
+  const isOwner = address === group.owner;
 
   return (
     <div className="dashboard group-detail-page">
@@ -109,9 +158,17 @@ export default function GroupDetail({
 
       <div className="group-detail-header">
         <h1 className="group-detail-title">{group.name}</h1>
-        <button className="btn-primary btn-add-member" onClick={() => setShowAddMember(true)}>
-          <IconPlus /> Add Member
-        </button>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          {isOwner && (
+            <>
+              <button className="btn-secondary" onClick={() => setIsEditing(true)}>✏️ Edit</button>
+              <button className="btn-secondary" onClick={handleDelete} style={{ color: 'var(--red)' }}>🗑️ Delete</button>
+            </>
+          )}
+          <button className="btn-primary btn-add-member" onClick={() => setShowAddMember(true)}>
+            <IconPlus /> Add Member
+          </button>
+        </div>
       </div>
 
       <div className="group-detail-grid">
@@ -194,6 +251,28 @@ export default function GroupDetail({
           onPaid={() => onMarkPaid(group.id, payTarget.address)}
           onPay={handlePayShareContract}
         />
+      )}
+
+      {isEditing && (
+        <div className="modal-overlay">
+          <div className="modal-card">
+            <div className="modal-header">
+              <h2>Edit Group Name</h2>
+            </div>
+            <div className="modal-body">
+              <input
+                className="field-input"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                placeholder="Enter new group name"
+              />
+            </div>
+            <div className="modal-footer">
+              <button className="btn-secondary" onClick={() => setIsEditing(false)}>Cancel</button>
+              <button className="btn-primary" onClick={handleEdit}>Save</button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

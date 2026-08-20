@@ -31,6 +31,8 @@ pub enum SplitBillError {
     AlreadyPaid = 1,
     NotAMember = 2,
     IncorrectAmount = 3,
+    GroupNotFound = 4,
+    NotOwner = 5,
 }
 
 const GROUP_DATA: Symbol = symbol_short!("GROUPS");
@@ -205,23 +207,17 @@ impl SplitBillContract {
         result
     }
 
-    // ================================================================
-    // 🆕 Fungsi baru: ambil semua grup yang diikuti oleh alamat tertentu
-    // ================================================================
     pub fn get_groups_by_member(env: Env, member_address: Address) -> Vec<Group> {
-        // 1. Ambil semua member dari storage
         let all_members: Vec<Member> = env
             .storage()
             .instance()
             .get(&MEMBER_DATA)
             .unwrap_or(Vec::new(&env));
 
-        // 2. Kumpulkan group_id yang mengandung alamat ini
         let mut group_ids: Vec<u64> = Vec::new(&env);
         for i in 0..all_members.len() {
             let m = all_members.get(i).unwrap();
             if m.address == member_address {
-                // Cegah duplikasi (satu address hanya satu entry per group)
                 let mut already_exists = false;
                 for j in 0..group_ids.len() {
                     if group_ids.get(j).unwrap() == m.group_id {
@@ -235,14 +231,12 @@ impl SplitBillContract {
             }
         }
 
-        // 3. Ambil semua grup
         let all_groups: Vec<Group> = env
             .storage()
             .instance()
             .get(&GROUP_DATA)
             .unwrap_or(Vec::new(&env));
 
-        // 4. Filter grup yang id-nya ada di group_ids
         let mut result: Vec<Group> = Vec::new(&env);
         for i in 0..all_groups.len() {
             let g = all_groups.get(i).unwrap();
@@ -255,6 +249,83 @@ impl SplitBillContract {
         }
 
         result
+    }
+
+    // ================================================================
+    // 🆕 Update group name
+    // ================================================================
+    pub fn update_group(
+        env: Env,
+        group_id: u64,
+        owner: Address,
+        new_name: String,
+    ) -> Result<Group, SplitBillError> {
+        owner.require_auth();
+
+        let mut groups: Vec<Group> = env
+            .storage()
+            .instance()
+            .get(&GROUP_DATA)
+            .unwrap_or(Vec::new(&env));
+
+        for i in 0..groups.len() {
+            let g = groups.get(i).unwrap();
+            if g.id == group_id {
+                if g.owner != owner {
+                    return Err(SplitBillError::NotOwner);
+                }
+                let mut updated = g;
+                updated.name = new_name;
+                groups.set(i, updated.clone());
+                env.storage().instance().set(&GROUP_DATA, &groups);
+                env.events()
+                    .publish((symbol_short!("g_update"), group_id), owner);
+                return Ok(updated);
+            }
+        }
+        Err(SplitBillError::GroupNotFound)
+    }
+
+    // ================================================================
+    // 🆕 Delete group
+    // ================================================================
+    pub fn delete_group(
+        env: Env,
+        group_id: u64,
+        owner: Address,
+    ) -> Result<(), SplitBillError> {
+        owner.require_auth();
+
+        let mut groups: Vec<Group> = env
+            .storage()
+            .instance()
+            .get(&GROUP_DATA)
+            .unwrap_or(Vec::new(&env));
+
+        let mut new_groups: Vec<Group> = Vec::new(&env);
+        let mut found = false;
+
+        for i in 0..groups.len() {
+            let g = groups.get(i).unwrap();
+            if g.id == group_id {
+                if g.owner != owner {
+                    return Err(SplitBillError::NotOwner);
+                }
+                found = true;
+                // skip this group (delete)
+            } else {
+                new_groups.push_back(g);
+            }
+        }
+
+        if !found {
+            return Err(SplitBillError::GroupNotFound);
+        }
+
+        env.storage().instance().set(&GROUP_DATA, &new_groups);
+        env.events()
+            .publish((symbol_short!("g_delete"), group_id), owner);
+        Ok(())
     }
 }
 
