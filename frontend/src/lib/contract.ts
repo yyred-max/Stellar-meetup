@@ -1,3 +1,4 @@
+// src/lib/contract.ts
 import {
   Contract,
   TransactionBuilder,
@@ -66,7 +67,6 @@ export async function viewContract(
     return null;
   } catch (err) {
     console.error(`Error in viewContract (${method}):`, err);
-    // Re-throw agar bisa ditangkap di pemanggil
     throw err;
   }
 }
@@ -217,7 +217,6 @@ export async function getGroupsByMember(member: string): Promise<Group[]> {
     return [];
   } catch (err) {
     console.error("❌ Error in getGroupsByMember:", err);
-    // Jangan re-throw, kembalikan array kosong agar UI tidak error
     return [];
   }
 }
@@ -308,6 +307,7 @@ export async function payShare(
 
 /**
  * Mengambil daftar member untuk suatu group.
+ * Data member bersifat publik, tidak bergantung pada sourcePublicKey.
  */
 export async function getMembers(
   groupId: bigint,
@@ -323,7 +323,7 @@ export async function getMembers(
       return result.map((m: any) => ({
         address: String(m.address),
         share: Number(m.share),
-        paid: Boolean(m.has_paid), // perhatikan field name di kontrak: has_paid
+        paid: Boolean(m.has_paid), // field di kontrak: has_paid
       }));
     }
     return [];

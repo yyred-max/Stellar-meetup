@@ -101,7 +101,16 @@ function App() {
               return g;
             }
             const members = await getMembers(groupId, address);
-            return { ...g, members };
+
+            // 🔥 DEDUPLIKASI MEMBER berdasarkan address
+            const uniqueMembers = Array.from(
+              new Map(members.map((m) => [m.address, m])).values()
+            );
+
+            // 🔥 Hitung ulang totalShare dari member
+            const totalShare = uniqueMembers.reduce((sum, m) => sum + m.share, 0);
+
+            return { ...g, members: uniqueMembers, totalShare };
           } catch (err) {
             console.error(`Failed to get members for group ${g.id}:`, err);
             return g;
