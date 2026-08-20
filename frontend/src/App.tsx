@@ -121,31 +121,22 @@ function App() {
       allGroups = groupsWithMembers;
 
       console.log("📦 allGroups with members:", allGroups);
-      setGroups(allGroups);
 
-      if (allGroups.length > 0) {
-        localStorage.setItem(`splitbill_groups_${address}`, JSON.stringify(allGroups));
-      } else {
-        const cached = localStorage.getItem(`splitbill_groups_${address}`);
-        if (cached) {
-          try {
-            const parsed = JSON.parse(cached);
-            if (parsed.length > 0) {
-              console.log("📦 Using cached data from localStorage");
-              setGroups(parsed);
-              return;
-            }
-          } catch (e) {}
-        }
-        setGroups([]);
-      }
+      // ✅ PERBAIKAN: Selalu set state dengan hasil dari blockchain,
+      //    apapun isinya (termasuk array kosong). Jangan fallback ke localStorage
+      //    hanya karena hasilnya kosong.
+      setGroups(allGroups);
+      localStorage.setItem(`splitbill_groups_${address}`, JSON.stringify(allGroups));
+
     } catch (err) {
       console.error("❌ Failed to load groups:", err);
+      // ⚠️ Fallback ke localStorage HANYA jika terjadi error (network, RPC, dll.)
       const cached = localStorage.getItem(`splitbill_groups_${address}`);
       if (cached) {
         try {
           const parsed = JSON.parse(cached);
           if (parsed.length > 0) {
+            console.log("📦 Using cached data from localStorage (error fallback)");
             setGroups(parsed);
             return;
           }
@@ -342,7 +333,7 @@ function App() {
         onGoGroups={() => setPage("groups")}
         onGoActivity={() => setPage("activity")}
         onActivityAdd={addActivity}
-        onRefresh={loadGroups} // 🔥 tambahkan ini
+        onRefresh={loadGroups}
       />
     );
   }
