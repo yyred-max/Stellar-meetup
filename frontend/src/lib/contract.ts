@@ -305,3 +305,30 @@ export async function payShare(
     member
   );
 }
+
+/**
+ * Mengambil daftar member untuk suatu group.
+ */
+export async function getMembers(
+  groupId: bigint,
+  sourcePublicKey: string
+): Promise<Member[]> {
+  try {
+    const result = await viewContract(
+      "get_members",
+      [nativeToScVal(groupId, { type: "u64" })],
+      sourcePublicKey
+    );
+    if (Array.isArray(result)) {
+      return result.map((m: any) => ({
+        address: String(m.address),
+        share: Number(m.share),
+        paid: Boolean(m.has_paid), // perhatikan field name di kontrak: has_paid
+      }));
+    }
+    return [];
+  } catch (err) {
+    console.error(`Error fetching members for group ${groupId}:`, err);
+    return [];
+  }
+}

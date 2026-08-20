@@ -5,7 +5,7 @@ import Dashboard from "./components/Dashboard";
 import Groups from "./components/Groups";
 import ActivityPage from "./components/Activity";
 import GroupDetail from "./components/GroupDetail";
-import { getGroups, getGroupsByMember } from "./lib/contract";
+import { getGroups, getGroupsByMember, getMembers } from "./lib/contract";
 import {
   IconWallet,
   IconCheck,
@@ -80,53 +80,63 @@ function App() {
     console.log("🔄 loadGroups for address:", address);
     setIsLoadingGroups(true);
     try {
-      // 1. Ambil grup yang dibuat oleh wallet ini (owner)
       const ownedGroups = await getGroups(address);
-      console.log("📦 ownedGroups:", ownedGroups);
-      // 2. Ambil grup di mana wallet ini terdaftar sebagai member
       const memberGroups = await getGroupsByMember(address);
-      console.log("📦 memberGroups:", memberGroups);
 
-      // 3. Gabung & deduplikasi berdasarkan id
       const mergedMap = new Map<string, Group>();
       [...ownedGroups, ...memberGroups].forEach((g) => {
         mergedMap.set(g.id, g);
       });
-      const allGroups = Array.from(mergedMap.values());
-      console.log("📦 allGroups merged:", allGroups);
+      let allGroups = Array.from(mergedMap.values());
 
-      // 4. Jika blockchain mengembalikan data, gunakan dan simpan cache
+      // 🔥 Ambil daftar member untuk setiap grup
+      const groupsWithMembers = await Promise.all(
+        allGroups.map(async (g) => {
+          try {
+            let groupId: bigint;
+            try {
+              groupId = BigInt(g.id);
+            } catch (e) {
+              console.warn(`⚠️ Invalid group.id for ${g.id}, skipping members fetch`);
+              return g;
+            }
+            const members = await getMembers(groupId, address);
+            return { ...g, members };
+          } catch (err) {
+            console.error(`Failed to get members for group ${g.id}:`, err);
+            return g;
+          }
+        })
+      );
+
+      allGroups = groupsWithMembers;
+
+      console.log("📦 allGroups with members:", allGroups);
+      setGroups(allGroups);
+
       if (allGroups.length > 0) {
-        setGroups(allGroups);
         localStorage.setItem(`splitbill_groups_${address}`, JSON.stringify(allGroups));
       } else {
-        // Jika blockchain kosong, cek localStorage sebagai fallback
         const cached = localStorage.getItem(`splitbill_groups_${address}`);
         if (cached) {
           try {
             const parsed = JSON.parse(cached);
             if (parsed.length > 0) {
-              console.log("📦 Using cached data from localStorage (blockchain empty)");
+              console.log("📦 Using cached data from localStorage");
               setGroups(parsed);
-              // Jangan hapus cache, biarkan tetap ada
               return;
             }
-          } catch (e) {
-            // ignore
-          }
+          } catch (e) {}
         }
-        // Jika tidak ada cache, set kosong
         setGroups([]);
       }
     } catch (err) {
-      console.error("❌ Failed to load groups from blockchain:", err);
-      // Fallback ke localStorage jika terjadi error
+      console.error("❌ Failed to load groups:", err);
       const cached = localStorage.getItem(`splitbill_groups_${address}`);
       if (cached) {
         try {
           const parsed = JSON.parse(cached);
           if (parsed.length > 0) {
-            console.log("📦 Using cached data from localStorage (error fallback)");
             setGroups(parsed);
             return;
           }
