@@ -17,7 +17,7 @@ interface GroupDetailProps {
   onGoGroups: () => void;
   onGoActivity: () => void;
   onActivityAdd?: (activity: Omit<Activity, 'id' | 'timestamp'>) => void;
-  onRefresh?: () => void; // tambahan untuk refresh data setelah edit/delete
+  onRefresh?: () => void;
 }
 
 function shortAddr(addr: string) {
@@ -87,17 +87,18 @@ export default function GroupDetail({
     }
     try {
       const groupId = BigInt(group.id);
+      console.log("📝 Editing group:", { groupId: groupId.toString(), owner: address });
       await updateGroup(groupId, address, editName);
       onActivityAdd?.({
-        type: 'group_created', // kita pakai type yang ada, atau kita bisa tambahkan type baru, tapi kita pakai existing
+        type: 'group_created',
         title: `Group renamed to "${editName}"`,
         description: `Group ID: ${group.id}`,
       });
       setIsEditing(false);
       if (onRefresh) onRefresh();
-      // optional navigate to groups to see updated list
       onGoGroups();
     } catch (err: any) {
+      console.error("Edit error:", err);
       alert(err.message || "Failed to update group.");
     }
   };
@@ -111,15 +112,18 @@ export default function GroupDetail({
     if (!confirm(`Delete group "${group.name}"? This action cannot be undone.`)) return;
     try {
       const groupId = BigInt(group.id);
-      await deleteGroup(groupId, address);
+      console.log("🗑️ Deleting group:", { groupId: groupId.toString(), owner: address });
+      const result = await deleteGroup(groupId, address);
+      console.log("✅ Delete result:", result);
       onActivityAdd?.({
         type: 'group_created',
         title: `Group "${group.name}" deleted`,
         description: `Group ID: ${group.id}`,
       });
       if (onRefresh) onRefresh();
-      onGoGroups(); // navigate back to groups
+      onGoGroups();
     } catch (err: any) {
+      console.error("❌ Delete error:", err);
       alert(err.message || "Failed to delete group.");
     }
   };

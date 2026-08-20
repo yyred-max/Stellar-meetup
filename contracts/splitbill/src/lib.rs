@@ -1,3 +1,4 @@
+// contracts/splitbill/src/lib.rs
 #![no_std]
 
 use soroban_sdk::{
@@ -252,7 +253,7 @@ impl SplitBillContract {
     }
 
     // ================================================================
-    // 🆕 Update group name
+    // Update group name
     // ================================================================
     pub fn update_group(
         env: Env,
@@ -287,7 +288,7 @@ impl SplitBillContract {
     }
 
     // ================================================================
-    // 🆕 Delete group
+    // Delete group
     // ================================================================
     pub fn delete_group(
         env: Env,
@@ -296,7 +297,8 @@ impl SplitBillContract {
     ) -> Result<(), SplitBillError> {
         owner.require_auth();
 
-        let mut groups: Vec<Group> = env
+        // 🔥 remove unused 'mut' to avoid warning
+        let groups: Vec<Group> = env
             .storage()
             .instance()
             .get(&GROUP_DATA)
