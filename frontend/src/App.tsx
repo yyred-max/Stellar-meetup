@@ -71,7 +71,7 @@ function App() {
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [activities, setActivities] = useState<Activity[]>([]);
 
-  // ===== FUNGSI LOAD DATA DARI BLOCKCHAIN (PRIORITAS UTAMA) =====
+  // ===== FUNGSI LOAD DATA DARI BLOCKCHAIN DENGAN FALLBACK LOCALSTORAGE =====
   const loadGroups = async () => {
     if (!address) {
       console.warn("⛔ loadGroups: address is null");
@@ -95,28 +95,44 @@ function App() {
       const allGroups = Array.from(mergedMap.values());
       console.log("📦 allGroups merged:", allGroups);
 
-      // 4. Set state dan simpan ke localStorage sebagai cache
-      setGroups(allGroups);
-      // Simpan cache hanya jika data tidak kosong, agar tidak menimpa cache yang sudah ada
+      // 4. Jika blockchain mengembalikan data, gunakan dan simpan cache
       if (allGroups.length > 0) {
+        setGroups(allGroups);
         localStorage.setItem(`splitbill_groups_${address}`, JSON.stringify(allGroups));
       } else {
-        // Jika blockchain mengembalikan array kosong, kita hapus cache untuk menghindari data usang
-        localStorage.removeItem(`splitbill_groups_${address}`);
+        // Jika blockchain kosong, cek localStorage sebagai fallback
+        const cached = localStorage.getItem(`splitbill_groups_${address}`);
+        if (cached) {
+          try {
+            const parsed = JSON.parse(cached);
+            if (parsed.length > 0) {
+              console.log("📦 Using cached data from localStorage (blockchain empty)");
+              setGroups(parsed);
+              // Jangan hapus cache, biarkan tetap ada
+              return;
+            }
+          } catch (e) {
+            // ignore
+          }
+        }
+        // Jika tidak ada cache, set kosong
+        setGroups([]);
       }
     } catch (err) {
       console.error("❌ Failed to load groups from blockchain:", err);
-      // Fallback ke localStorage hanya jika terjadi error (bukan jika blockchain mengembalikan kosong)
-      const saved = localStorage.getItem(`splitbill_groups_${address}`);
-      if (saved) {
+      // Fallback ke localStorage jika terjadi error
+      const cached = localStorage.getItem(`splitbill_groups_${address}`);
+      if (cached) {
         try {
-          setGroups(JSON.parse(saved));
-        } catch (e) {
-          // ignore
-        }
-      } else {
-        setGroups([]);
+          const parsed = JSON.parse(cached);
+          if (parsed.length > 0) {
+            console.log("📦 Using cached data from localStorage (error fallback)");
+            setGroups(parsed);
+            return;
+          }
+        } catch (e) {}
       }
+      setGroups([]);
     } finally {
       setIsLoadingGroups(false);
     }
@@ -279,7 +295,7 @@ function App() {
         address={address}
         groups={groups}
         isLoading={isLoadingGroups}
-        error={errorMsg}                 // atau state error khusus
+        error={errorMsg}
         onRefresh={loadGroups}
         onAddGroup={addGroup}
         onViewGroup={handleViewGroup}
