@@ -1,4 +1,3 @@
-// contracts/splitbill/src/lib.rs
 #![no_std]
 
 use soroban_sdk::{
@@ -38,6 +37,7 @@ pub enum SplitBillError {
 
 const GROUP_DATA: Symbol = symbol_short!("GROUPS");
 const MEMBER_DATA: Symbol = symbol_short!("MEMBERS");
+const NEXT_ID: Symbol = symbol_short!("NEXT_ID"); // 🆕 counter untuk ID
 
 #[contract]
 pub struct SplitBillContract;
@@ -60,8 +60,15 @@ impl SplitBillContract {
             .get(&GROUP_DATA)
             .unwrap_or(Vec::new(&env));
 
+        // 🆕 Ambil counter berikutnya, mulai dari 1 jika belum ada
+        let next_id: u64 = env
+            .storage()
+            .instance()
+            .get(&NEXT_ID)
+            .unwrap_or(1u64);
+
         let group = Group {
-            id: env.prng().gen::<u64>(),
+            id: next_id, // 🆕 gunakan counter, bukan random
             name,
             owner: owner.clone(),
             total_members: 0,
@@ -70,6 +77,7 @@ impl SplitBillContract {
 
         groups.push_back(group.clone());
         env.storage().instance().set(&GROUP_DATA, &groups);
+        env.storage().instance().set(&NEXT_ID, &(next_id + 1)); // 🆕 simpan counter berikutnya
 
         env.events()
             .publish((symbol_short!("g_create"), group.id), owner);
@@ -141,7 +149,6 @@ impl SplitBillContract {
 
         for i in 0..members.len() {
             let m = members.get(i).unwrap();
-
             if m.group_id == group_id && m.address == member {
                 found_index = Some(i);
                 break;
@@ -172,7 +179,6 @@ impl SplitBillContract {
 
         for i in 0..groups.len() {
             let mut g = groups.get(i).unwrap();
-
             if g.id == group_id {
                 g.members_paid += 1;
                 groups.set(i, g);
@@ -199,7 +205,6 @@ impl SplitBillContract {
 
         for i in 0..members.len() {
             let m = members.get(i).unwrap();
-
             if m.group_id == group_id {
                 result.push_back(m);
             }
@@ -252,9 +257,9 @@ impl SplitBillContract {
         result
     }
 
-    // ================================================================
-    // Update group name
-    // ================================================================
+    // ============================================================
+    // 🆕 Update group name
+    // ============================================================
     pub fn update_group(
         env: Env,
         group_id: u64,
@@ -287,9 +292,9 @@ impl SplitBillContract {
         Err(SplitBillError::GroupNotFound)
     }
 
-    // ================================================================
-    // Delete group
-    // ================================================================
+    // ============================================================
+    // 🆕 Delete group
+    // ============================================================
     pub fn delete_group(
         env: Env,
         group_id: u64,
@@ -297,7 +302,6 @@ impl SplitBillContract {
     ) -> Result<(), SplitBillError> {
         owner.require_auth();
 
-        // 🔥 remove unused 'mut' to avoid warning
         let groups: Vec<Group> = env
             .storage()
             .instance()
