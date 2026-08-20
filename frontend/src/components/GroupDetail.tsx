@@ -1,16 +1,17 @@
 // src/components/GroupDetail.tsx
 import { useState } from "react";
 import AddMemberModal from "./AddMemberModal";
-import PayShareModal from "./PayShareModal"; // ← BARU
+import PayShareModal from "./PayShareModal";
 import { IconPlus, IconLogout, IconUsers } from "./Icons";
 import type { Group, Member } from "./Groups";
 import type { Activity } from "../App";
+import { addMember } from "../lib/contract"; // 🔥 import fungsi kontrak
 
 interface GroupDetailProps {
   address: string | null;
   group: Group;
   onAddMember: (groupId: string, member: Member) => void;
-  onMarkPaid: (groupId: string, memberAddress: string) => void; // ← BARU
+  onMarkPaid: (groupId: string, memberAddress: string) => void;
   onDisconnect: () => void;
   onGoHome: () => void;
   onGoGroups: () => void;
@@ -27,7 +28,7 @@ export default function GroupDetail({
   address,
   group,
   onAddMember,
-  onMarkPaid, // ← BARU
+  onMarkPaid,
   onDisconnect,
   onGoHome,
   onGoGroups,
@@ -35,15 +36,28 @@ export default function GroupDetail({
   onActivityAdd,
 }: GroupDetailProps) {
   const [showAddMember, setShowAddMember] = useState(false);
-  const [payTarget, setPayTarget] = useState<Member | null>(null); // ← BARU
+  const [payTarget, setPayTarget] = useState<Member | null>(null);
 
   const totalMembers = group.members.length;
   const paidCount = group.members.filter((m) => m.paid).length;
-  const yourShare =
-    totalMembers > 0 ? group.totalShare / totalMembers : 0;
+  const yourShare = totalMembers > 0 ? group.totalShare / totalMembers : 0;
 
   const handleMemberAdded = (member: Member) => {
     onAddMember(group.id, member);
+  };
+
+  // 🔥 Fungsi untuk memanggil kontrak add_member
+  const handleAddMemberContract = async (memberAddress: string, share: number) => {
+    if (!address) throw new Error("Wallet not connected");
+    // group.id adalah string, konversi ke BigInt
+    const groupId = BigInt(group.id);
+    // owner dari group (pemilik grup)
+    const owner = group.owner;
+    // Share dalam XLM (decimal), konversi ke stroop (1 XLM = 10.000.000 stroop)
+    // Karena kontrak menerima i128 dalam satuan stroop
+    const shareAmount = BigInt(Math.round(share * 10_000_000));
+    const result = await addMember(groupId, owner, memberAddress, shareAmount);
+    return { hash: result.hash };
   };
 
   return (
@@ -230,6 +244,7 @@ export default function GroupDetail({
           onAdded={handleMemberAdded}
           onViewGroup={() => setShowAddMember(false)}
           onActivityAdd={onActivityAdd}
+          onAddMember={handleAddMemberContract} // 🔥 sambungkan ke kontrak
         />
       )}
 

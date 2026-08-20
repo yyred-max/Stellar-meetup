@@ -8,7 +8,7 @@ import {
   IconCopy,
 } from "./Icons";
 import type { Member } from "./Groups";
-import type { Activity } from "../App"; // import tipe Activity
+import type { Activity } from "../App";
 
 interface AddMemberModalProps {
   groupName: string;
@@ -16,10 +16,12 @@ interface AddMemberModalProps {
   onClose: () => void;
   onAdded: (member: Member) => void;
   onViewGroup?: () => void;
-  /**
-   * Dipanggil setelah transaksi berhasil untuk menambahkan aktivitas ke feed.
-   */
   onActivityAdd?: (activity: Omit<Activity, 'id' | 'timestamp'>) => void;
+  /**
+   * 🔥 Fungsi untuk memanggil kontrak Soroban yang sebenarnya.
+   * Jika tidak diberikan, modal akan menggunakan simulasi (hanya untuk testing UI).
+   */
+  onAddMember?: (address: string, share: number) => Promise<{ hash: string }>;
 }
 
 type Step = "form" | "processing" | "success";
@@ -29,6 +31,10 @@ function delay(ms: number) {
 }
 
 async function simulateAddMember(): Promise<{ hash: string }> {
+  console.warn(
+    "⚠️ [AddMemberModal] Using SIMULATION mode. " +
+    "Pass `onAddMember` prop to use real contract call."
+  );
   await delay(1600);
   const hash = Array.from({ length: 12 }, () =>
     "0123456789ABCDEF"[Math.floor(Math.random() * 16)]
@@ -47,7 +53,8 @@ export default function AddMemberModal({
   onClose,
   onAdded,
   onViewGroup,
-  onActivityAdd, // ← tambahkan
+  onActivityAdd,
+  onAddMember, // ← prop baru
 }: AddMemberModalProps) {
   const [step, setStep] = useState<Step>("form");
   const [walletAddress, setWalletAddress] = useState("");
@@ -65,7 +72,11 @@ export default function AddMemberModal({
     setStep("processing");
 
     try {
-      const result = await simulateAddMember();
+      // Gunakan onAddMember jika ada, fallback ke simulasi
+      const result = await (onAddMember
+        ? onAddMember(walletAddress.trim(), shareValue)
+        : simulateAddMember());
+
       setTxHash(result.hash);
 
       const newMember: Member = {
@@ -75,7 +86,6 @@ export default function AddMemberModal({
       };
       onAdded(newMember);
 
-      // ✅ Panggil onActivityAdd untuk menambahkan aktivitas ke feed
       onActivityAdd?.({
         type: 'member_added',
         title: `You added ${shortAddr(walletAddress)} to ${groupName}`,
@@ -85,7 +95,8 @@ export default function AddMemberModal({
       setStep("success");
     } catch (error) {
       console.error("Failed to add member:", error);
-      alert("Gagal menambahkan member. Silakan coba lagi.");
+      const errorMessage = error instanceof Error ? error.message : "Gagal menambahkan member. Silakan coba lagi.";
+      alert(errorMessage);
       setStep("form");
     }
   }
