@@ -109,10 +109,28 @@ export default function GroupDetail({
       alert("Only the group owner can delete.");
       return;
     }
-    if (!confirm(`Delete group "${group.name}"? This action cannot be undone.`)) return;
+  
+    // 🔥 Validasi ID
+    let groupId: bigint;
     try {
-      const groupId = BigInt(group.id);
-      console.log("🗑️ Deleting group:", { groupId: groupId.toString(), owner: address });
+      console.log("🧪 group.id from state:", group.id, "type:", typeof group.id);
+      groupId = BigInt(group.id);
+      console.log("🧪 groupId as BigInt:", groupId.toString());
+    } catch (err) {
+      console.error("❌ Invalid group.id:", group.id);
+      alert("Group ini tidak bisa dihapus karena ID tidak valid. Silakan buat grup baru.");
+      return;
+    }
+  
+    if (groupId <= 0n) {
+      alert("Group ID tidak valid.");
+      return;
+    }
+  
+    if (!confirm(`Delete group "${group.name}"? This action cannot be undone.`)) return;
+  
+    try {
+      console.log("🗑️ Sending delete_group with:", { groupId: groupId.toString(), owner: address });
       const result = await deleteGroup(groupId, address);
       console.log("✅ Delete result:", result);
       onActivityAdd?.({
@@ -124,7 +142,7 @@ export default function GroupDetail({
       onGoGroups();
     } catch (err: any) {
       console.error("❌ Delete error:", err);
-      alert(err.message || "Failed to delete group.");
+      alert(err.message || "Failed to delete group. Please check console for details.");
     }
   };
 
