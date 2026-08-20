@@ -55,7 +55,8 @@ export default function GroupDetail({
       throw new Error("Invalid group ID. Please create a new group.");
     }
     if (groupId <= 0n) throw new Error("Invalid group ID");
-    const shareAmount = BigInt(Math.round(share * 10_000_000));
+    // 🔥 HAPUS perkalian 10^7 – kirim langsung dalam XLM
+    const shareAmount = BigInt(Math.round(share));
     if (shareAmount <= 0n) throw new Error("Share must be > 0");
     const result = await addMember(groupId, group.owner, memberAddress, shareAmount);
     return { hash: result.hash };
@@ -69,7 +70,8 @@ export default function GroupDetail({
     } catch (e) {
       throw new Error("Invalid group ID");
     }
-    const amountStroop = BigInt(Math.round(amount * 10_000_000));
+    // 🔥 HAPUS perkalian 10^7
+    const amountStroop = BigInt(Math.round(amount));
     if (amountStroop <= 0n) throw new Error("Amount must be > 0");
     const result = await payShare(groupId, memberAddress, amountStroop);
     return { hash: result.hash };

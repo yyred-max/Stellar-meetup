@@ -85,30 +85,23 @@ export async function callContract(method: string, args: any[], sourcePublicKey:
   }
 }
 
+// 🔥 PERBAIKAN: getGroups dan getGroupsByMember tidak punya members di kontrak
 export async function getGroups(owner: string): Promise<Group[]> {
   if (!owner) return [];
   try {
-    console.log(`🔍 getGroups: fetching for owner ${owner.slice(0,6)}...`);
     const result = await viewContract("get_groups", [], owner);
     if (Array.isArray(result)) {
-      const allGroups = result.map((item: any) => ({
+      return result.map((item: any) => ({
         id: String(item.id),
         name: String(item.name),
         owner: String(item.owner),
-        totalShare: Number(item.total_share ?? item.totalShare) || 0,
-        members: (item.members || []).map((m: any) => ({
-          address: String(m.address),
-          share: Number(m.share) || 0,
-          paid: Boolean(m.paid),
-        })),
-      }));
-      const filtered = allGroups.filter((g: Group) => g.owner === owner);
-      console.log(`✅ getGroups: found ${filtered.length} groups`);
-      return filtered;
+        totalShare: Number(item.total_share) || 0,
+        members: [], // kontrak tidak kembalikan member
+      })).filter((g: Group) => g.owner === owner);
     }
     return [];
   } catch (err) {
-    console.error("❌ Error in getGroups:", err);
+    console.error("Error in getGroups:", err);
     return [];
   }
 }
@@ -116,38 +109,32 @@ export async function getGroups(owner: string): Promise<Group[]> {
 export async function getGroupsByMember(member: string): Promise<Group[]> {
   if (!member) return [];
   try {
-    console.log(`🔍 getGroupsByMember: fetching for member ${member.slice(0,6)}...`);
     const memberScVal = new Address(member).toScVal();
     const result = await viewContract("get_groups_by_member", [memberScVal], member);
     if (Array.isArray(result)) {
-      const groups = result.map((item: any) => ({
+      return result.map((item: any) => ({
         id: String(item.id),
         name: String(item.name),
         owner: String(item.owner),
-        totalShare: Number(item.total_share ?? item.totalShare) || 0,
-        members: (item.members || []).map((m: any) => ({
-          address: String(m.address),
-          share: Number(m.share) || 0,
-          paid: Boolean(m.paid),
-        })),
+        totalShare: Number(item.total_share) || 0,
+        members: [], // kontrak tidak kembalikan member
       }));
-      console.log(`✅ getGroupsByMember: found ${groups.length} groups`);
-      return groups;
     }
     return [];
   } catch (err) {
-    console.error("❌ Error in getGroupsByMember:", err);
+    console.error("Error in getGroupsByMember:", err);
     return [];
   }
 }
 
+// 🔥 PERBAIKAN: gunakan field share_amount, bukan share
 export async function getMembers(groupId: bigint, sourcePublicKey: string): Promise<Member[]> {
   try {
     const result = await viewContract("get_members", [nativeToScVal(groupId, { type: "u64" })], sourcePublicKey);
     if (Array.isArray(result)) {
       return result.map((m: any) => ({
         address: String(m.address),
-        share: Number(m.share) || 0,
+        share: Number(m.share_amount) || 0, // ← field yang benar
         paid: Boolean(m.has_paid),
       }));
     }
@@ -167,8 +154,8 @@ export async function createGroup(owner: string, name: string) {
 export async function addMember(groupId: bigint, owner: string, member: string, shareAmount: bigint) {
   if (!owner) throw new Error("Owner wallet not connected.");
   if (!member) throw new Error("Member address required.");
-  if (groupId <= 0n) throw new Error("Group ID must be greater than 0.");
-  if (shareAmount <= 0n) throw new Error("Share amount must be greater than 0.");
+  if (groupId <= 0n) throw new Error("Group ID must be > 0.");
+  if (shareAmount <= 0n) throw new Error("Share must be > 0.");
   return callContract(
     "add_member",
     [nativeToScVal(groupId, { type: "u64" }), new Address(owner).toScVal(), new Address(member).toScVal(), nativeToScVal(shareAmount, { type: "i128" })],
@@ -178,8 +165,8 @@ export async function addMember(groupId: bigint, owner: string, member: string, 
 
 export async function payShare(groupId: bigint, member: string, amount: bigint) {
   if (!member) throw new Error("Wallet not connected.");
-  if (groupId <= 0n) throw new Error("Group ID must be greater than 0.");
-  if (amount <= 0n) throw new Error("Amount must be greater than 0.");
+  if (groupId <= 0n) throw new Error("Group ID must be > 0.");
+  if (amount <= 0n) throw new Error("Amount must be > 0.");
   return callContract(
     "pay_share",
     [nativeToScVal(groupId, { type: "u64" }), new Address(member).toScVal(), nativeToScVal(amount, { type: "i128" })],
