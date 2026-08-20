@@ -1,6 +1,5 @@
 // src/components/Dashboard.tsx
 import { useState } from "react";
-import { createGroup } from "../lib/contract";
 import CreateGroupModal from "./CreateGroupModal";
 import {
   IconPlus,
@@ -8,6 +7,7 @@ import {
   IconCreditCard,
   IconUserPlus,
 } from "./Icons";
+import { createGroup } from "../lib/contract";
 import type { Activity } from "../App"; // import tipe dari App
 
 // ============================================================
