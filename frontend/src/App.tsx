@@ -34,6 +34,7 @@ export interface Group {
   owner: string;
   totalShare: number;
   members: Member[];
+  settled: boolean;
 }
 
 export interface Activity {

@@ -18,6 +18,7 @@ export interface Group {
   owner: string;
   totalShare: number;
   members: Member[];
+  settled: boolean; // 🔥 BARU
 }
 
 // ============================================================
@@ -73,6 +74,7 @@ export default function Groups({
         total: g.totalShare,
         share: yourShare,
         percent,
+        settled: g.settled, // 🔥 ambil dari props
       };
     });
   }, [groups]);
@@ -94,6 +96,7 @@ export default function Groups({
       owner: address!,
       totalShare: 0,
       members: [],
+      settled: false, // 🔥 default false
     };
     onAddGroup(newGroup);
     setShowCreateModal(false);
@@ -139,6 +142,12 @@ export default function Groups({
               <span className={`status-pill status-${g.status.toLowerCase()}`}>
                 {g.status}
               </span>
+              {/* 🔥 Tampilkan badge Settled jika sudah settled */}
+              {g.settled && (
+                <span className="status-pill" style={{ background: 'var(--green)', color: '#fff' }}>
+                  ✅ Settled
+                </span>
+              )}
             </div>
 
             <div className="group-amounts">

@@ -8,24 +8,7 @@ import {
   IconUserPlus,
 } from "./Icons";
 import { createGroup } from "../lib/contract";
-import type { Activity } from "../App";
-
-// ============================================================
-//  TIPE DATA (import dari App atau definisikan ulang)
-// ============================================================
-export interface Member {
-  address: string;
-  share: number;
-  paid: boolean;
-}
-
-export interface Group {
-  id: string;
-  name: string;
-  owner: string;
-  totalShare: number;
-  members: Member[];
-}
+import type { Activity, Group, Member } from "../App"; // 🔥 import dari App
 
 // ============================================================
 //  PROPS DASHBOARD
@@ -80,14 +63,14 @@ export default function Dashboard({
   const userName = address ? address.slice(0, 6) : "Yuli";
 
   // === HANDLER SAAT GROUP BERHASIL DIBUAT ===
-  // 🔥 Ubah: menerima groupId dari kontrak
   const handleGroupCreated = (data: { name: string; hash: string; groupId?: string }) => {
     const newGroup: Group = {
-      id: data.groupId || data.hash, // prioritaskan groupId dari kontrak
+      id: data.groupId || data.hash,
       name: data.name,
       owner: address!,
       totalShare: 0,
       members: [],
+      settled: false, // 🔥 tambahkan default
     };
     onAddGroup(newGroup);
     setShowCreateModal(false);
@@ -260,7 +243,6 @@ export default function Dashboard({
           address={address}
           onClose={() => setShowCreateModal(false)}
           onSuccess={handleGroupCreated}
-          // 🔥 Perbaiki: kirim result juga agar groupId bisa diambil
           onCreateGroup={async (data) => {
             if (!address) throw new Error("Wallet not connected");
             const result = await createGroup(address, data.name);

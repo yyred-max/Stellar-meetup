@@ -157,6 +157,10 @@ export default function GroupDetail({
       alert("All members must have paid before settling.");
       return;
     }
+    if (group.settled) {
+      alert("This group has already been settled.");
+      return;
+    }
     if (!confirm(`Settle group "${group.name}"? This will transfer all collected XLM to your wallet.`)) return;
     try {
       const groupId = BigInt(group.id);
@@ -220,11 +224,16 @@ export default function GroupDetail({
           <button className="btn-primary btn-add-member" onClick={() => setShowAddMember(true)}>
             <IconPlus /> Add Member
           </button>
-          {/* 🔥 TOMBOL SETTLE — muncul jika semua member sudah paid dan user adalah owner */}
-          {isOwner && totalMembers > 0 && paidCount === totalMembers && (
+          {/* 🔥 TOMBOL SETTLE — muncul jika semua member sudah paid, user adalah owner, dan belum settled */}
+          {isOwner && totalMembers > 0 && paidCount === totalMembers && !group.settled && (
             <button className="btn-primary" onClick={handleSettle} style={{ background: 'var(--green)' }}>
               💰 Settle
             </button>
+          )}
+          {group.settled && (
+            <span className="badge-completed" style={{ background: 'var(--green)', color: '#fff', padding: '8px 16px', borderRadius: '8px' }}>
+              ✅ Already Settled
+            </span>
           )}
         </div>
       </div>
@@ -271,6 +280,13 @@ export default function GroupDetail({
             <span className={paidCount === totalMembers ? "progress-complete-text" : "progress-text"}>
               {paidCount}/{totalMembers} Paid
             </span>
+          </div>
+          {/* 🔥 Status settled */}
+          <div className="summary-row">
+            <span>Settlement</span>
+            <strong className={group.settled ? "status-paid" : "status-pending"}>
+              {group.settled ? "✅ Settled" : "Pending"}
+            </strong>
           </div>
           <div className="progress-track">
             <div className={`progress-fill ${paidCount === totalMembers ? "is-complete" : ""}`}
