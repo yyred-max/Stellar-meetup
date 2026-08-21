@@ -212,29 +212,95 @@ export default function GroupDetail({
         <span className="crumb-current">{group.name}</span>
       </div>
 
+      
       <div className="group-detail-header">
         <h1 className="group-detail-title">{group.name}</h1>
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', width: '100%' }}>
+        <div style={{ 
+          display: 'flex', 
+          flexWrap: 'wrap', 
+          gap: '8px', 
+          alignItems: 'center',
+          width: '100%' 
+        }}>
           {isOwner && (
             <>
-              <button className="btn-secondary" onClick={() => setIsEditing(true)} style={{ flex: '1 0 0', minWidth: '80px', textAlign: 'center' }}>
+              <button 
+                className="btn-secondary" 
+                onClick={() => setIsEditing(true)} 
+                style={{ 
+                  flex: '1', 
+                  minWidth: '80px', 
+                  justifyContent: 'center',
+                  whiteSpace: 'nowrap'
+                }}
+              >
                 Edit
               </button>
-              <button className="btn-secondary" onClick={handleDelete} style={{ color: 'var(--red)', flex: '1 0 0', minWidth: '80px', textAlign: 'center' }}>
+              <button 
+                className="btn-secondary" 
+                onClick={handleDelete} 
+                style={{ 
+                  color: 'var(--red)', 
+                  flex: '1', 
+                  minWidth: '80px', 
+                  justifyContent: 'center',
+                  whiteSpace: 'nowrap'
+                }}
+              >
                 Delete
               </button>
             </>
           )}
-          <button className="btn-primary btn-add-member" onClick={() => setShowAddMember(true)} style={{ flex: '1 0 0', minWidth: '80px', textAlign: 'center' }}>
+          <button 
+            className="btn-primary btn-add-member" 
+            onClick={() => setShowAddMember(true)} 
+            style={{ 
+              flex: '1', 
+              minWidth: '80px', 
+              justifyContent: 'center',
+              whiteSpace: 'nowrap',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px'
+            }}
+          >
             <IconPlus /> Add Member
           </button>
           {isOwner && totalMembers > 0 && paidCount === totalMembers && !group.settled && (
-            <button className="btn-primary" onClick={handleSettle} style={{ background: 'var(--green)', flex: '1 0 0', minWidth: '80px', textAlign: 'center' }}>
+            <button 
+              className="btn-primary" 
+              onClick={handleSettle} 
+              style={{ 
+                background: 'var(--green)', 
+                flex: '1', 
+                minWidth: '80px', 
+                justifyContent: 'center',
+                whiteSpace: 'nowrap',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}
+            >
               <IconCreditCard /> Settle
             </button>
           )}
           {group.settled && (
-            <span className="badge-completed" style={{ background: 'var(--green)', color: '#fff', padding: '8px 16px', borderRadius: '8px', flex: '1 0 0', minWidth: '80px', textAlign: 'center' }}>
+            <span 
+              className="badge-completed" 
+              style={{ 
+                background: 'var(--green)', 
+                color: '#fff', 
+                padding: '8px 16px', 
+                borderRadius: '8px', 
+                flex: '1', 
+                minWidth: '80px', 
+                textAlign: 'center',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '4px'
+              }}
+            >
               <IconCheck /> Already Settled
             </span>
           )}
