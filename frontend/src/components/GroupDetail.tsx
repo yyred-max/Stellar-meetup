@@ -213,25 +213,28 @@ export default function GroupDetail({
       </div>
 
       <div className="group-detail-header">
-        <h1 className="group-detail-title">{group.name}</h1>
-        <div style={{ display: 'flex', gap: '8px' }}>
+      <h1 className="group-detail-title">{group.name}</h1>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
           {isOwner && (
             <>
-              <button className="btn-secondary" onClick={() => setIsEditing(true)}>Edit</button>
-              <button className="btn-secondary" onClick={handleDelete} style={{ color: 'var(--red)' }}>Delete</button>
+              <button className="btn-secondary" onClick={() => setIsEditing(true)} style={{ flex: 1, minWidth: '80px' }}>
+                Edit
+              </button>
+              <button className="btn-secondary" onClick={handleDelete} style={{ color: 'var(--red)', flex: 1, minWidth: '80px' }}>
+                Delete
+              </button>
             </>
           )}
-          <button className="btn-primary btn-add-member" onClick={() => setShowAddMember(true)}>
+          <button className="btn-primary btn-add-member" onClick={() => setShowAddMember(true)} style={{ flex: 1, minWidth: '80px' }}>
             <IconPlus /> Add Member
           </button>
-          {/* 🔥 TOMBOL SETTLE — muncul jika semua member sudah paid, user adalah owner, dan belum settled */}
           {isOwner && totalMembers > 0 && paidCount === totalMembers && !group.settled && (
-            <button className="btn-primary" onClick={handleSettle} style={{ background: 'var(--green)' }}>
+            <button className="btn-primary" onClick={handleSettle} style={{ background: 'var(--green)', flex: 1, minWidth: '80px' }}>
               💰 Settle
             </button>
           )}
           {group.settled && (
-            <span className="badge-completed" style={{ background: 'var(--green)', color: '#fff', padding: '8px 16px', borderRadius: '8px' }}>
+            <span className="badge-completed" style={{ background: 'var(--green)', color: '#fff', padding: '8px 16px', borderRadius: '8px', flex: 1, textAlign: 'center', minWidth: '80px' }}>
               ✅ Already Settled
             </span>
           )}

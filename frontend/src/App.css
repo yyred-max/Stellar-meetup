@@ -1164,3 +1164,12 @@ body {
 .btn-pay-share:hover { background: #7c4ded; }
 
 .status-badge.status-paid { display: inline-flex; align-items: center; gap: 4px; }
+
+.group-detail-header .btn-secondary,
+.group-detail-header .btn-primary,
+.group-detail-header .badge-completed {
+  flex: 1;
+  min-width: 80px;
+  justify-content: center;
+  white-space: nowrap;
+}
