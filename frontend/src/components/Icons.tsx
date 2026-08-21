@@ -76,8 +76,17 @@ export const IconLogout = () => (
   </svg>
 );
 
-export const IconCreditCard = () => (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+// 🔥 Gabungan versi pertama & kedua — default width=15, bisa di-override via props
+export const IconCreditCard = (props: any) => (
+  <svg
+    width="15"
+    height="15"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+    {...props}
+  >
     <rect x="2" y="5" width="20" height="14" rx="2" />
     <path d="M2 10h20" />
   </svg>

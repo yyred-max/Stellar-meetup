@@ -2,7 +2,7 @@
 import { useState } from "react";
 import AddMemberModal from "./AddMemberModal";
 import PayShareModal from "./PayShareModal";
-import { IconPlus, IconLogout, IconUsers } from "./Icons";
+import { IconPlus, IconLogout, IconUsers, IconCheck, IconCreditCard } from "./Icons"; // 🔥 tambah IconCheck & IconCreditCard
 import type { Group, Member } from "./Groups";
 import type { Activity } from "../App";
 import { addMember, payShare, updateGroup, deleteGroup, settleGroup } from "../lib/contract";
@@ -213,29 +213,29 @@ export default function GroupDetail({
       </div>
 
       <div className="group-detail-header">
-      <h1 className="group-detail-title">{group.name}</h1>
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+        <h1 className="group-detail-title">{group.name}</h1>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', width: '100%' }}>
           {isOwner && (
             <>
-              <button className="btn-secondary" onClick={() => setIsEditing(true)} style={{ flex: 1, minWidth: '80px' }}>
+              <button className="btn-secondary" onClick={() => setIsEditing(true)} style={{ flex: '1 0 0', minWidth: '80px', textAlign: 'center' }}>
                 Edit
               </button>
-              <button className="btn-secondary" onClick={handleDelete} style={{ color: 'var(--red)', flex: 1, minWidth: '80px' }}>
+              <button className="btn-secondary" onClick={handleDelete} style={{ color: 'var(--red)', flex: '1 0 0', minWidth: '80px', textAlign: 'center' }}>
                 Delete
               </button>
             </>
           )}
-          <button className="btn-primary btn-add-member" onClick={() => setShowAddMember(true)} style={{ flex: 1, minWidth: '80px' }}>
+          <button className="btn-primary btn-add-member" onClick={() => setShowAddMember(true)} style={{ flex: '1 0 0', minWidth: '80px', textAlign: 'center' }}>
             <IconPlus /> Add Member
           </button>
           {isOwner && totalMembers > 0 && paidCount === totalMembers && !group.settled && (
-            <button className="btn-primary" onClick={handleSettle} style={{ background: 'var(--green)', flex: 1, minWidth: '80px' }}>
-              💰 Settle
+            <button className="btn-primary" onClick={handleSettle} style={{ background: 'var(--green)', flex: '1 0 0', minWidth: '80px', textAlign: 'center' }}>
+              <IconCreditCard /> Settle
             </button>
           )}
           {group.settled && (
-            <span className="badge-completed" style={{ background: 'var(--green)', color: '#fff', padding: '8px 16px', borderRadius: '8px', flex: 1, textAlign: 'center', minWidth: '80px' }}>
-              ✅ Already Settled
+            <span className="badge-completed" style={{ background: 'var(--green)', color: '#fff', padding: '8px 16px', borderRadius: '8px', flex: '1 0 0', minWidth: '80px', textAlign: 'center' }}>
+              <IconCheck /> Already Settled
             </span>
           )}
         </div>
@@ -288,7 +288,7 @@ export default function GroupDetail({
           <div className="summary-row">
             <span>Settlement</span>
             <strong className={group.settled ? "status-paid" : "status-pending"}>
-              {group.settled ? "✅ Settled" : "Pending"}
+              {group.settled ? <><IconCheck /> Settled</> : "Pending"}
             </strong>
           </div>
           <div className="progress-track">
