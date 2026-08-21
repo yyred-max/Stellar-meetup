@@ -5,7 +5,7 @@ import PayShareModal from "./PayShareModal";
 import { IconPlus, IconLogout, IconUsers } from "./Icons";
 import type { Group, Member } from "./Groups";
 import type { Activity } from "../App";
-import { addMember, payShare, updateGroup, deleteGroup } from "../lib/contract";
+import { addMember, payShare, updateGroup, deleteGroup, settleGroup } from "../lib/contract";
 
 interface GroupDetailProps {
   address: string | null;
@@ -109,7 +109,7 @@ export default function GroupDetail({
       alert("Only the group owner can delete.");
       return;
     }
-  
+
     // 🔥 Validasi ID
     let groupId: bigint;
     try {
@@ -121,14 +121,14 @@ export default function GroupDetail({
       alert("Group ini tidak bisa dihapus karena ID tidak valid. Silakan buat grup baru.");
       return;
     }
-  
+
     if (groupId <= 0n) {
       alert("Group ID tidak valid.");
       return;
     }
-  
+
     if (!confirm(`Delete group "${group.name}"? This action cannot be undone.`)) return;
-  
+
     try {
       console.log("🗑️ Sending delete_group with:", { groupId: groupId.toString(), owner: address });
       const result = await deleteGroup(groupId, address);
@@ -143,6 +143,36 @@ export default function GroupDetail({
     } catch (err: any) {
       console.error("❌ Delete error:", err);
       alert(err.message || "Failed to delete group. Please check console for details.");
+    }
+  };
+
+  // 🔥 HANDLE SETTLE
+  const handleSettle = async () => {
+    if (!address) return;
+    if (address !== group.owner) {
+      alert("Only the group owner can settle.");
+      return;
+    }
+    if (totalMembers === 0 || paidCount !== totalMembers) {
+      alert("All members must have paid before settling.");
+      return;
+    }
+    if (!confirm(`Settle group "${group.name}"? This will transfer all collected XLM to your wallet.`)) return;
+    try {
+      const groupId = BigInt(group.id);
+      console.log("💰 Settling group:", { groupId: groupId.toString(), owner: address });
+      const result = await settleGroup(groupId, address);
+      console.log("✅ Settle result:", result);
+      onActivityAdd?.({
+        type: 'share_paid',
+        title: `Group "${group.name}" settled`,
+        description: `Total collected: ${result} XLM`,
+      });
+      if (onRefresh) onRefresh();
+      onGoGroups();
+    } catch (err: any) {
+      console.error("❌ Settle error:", err);
+      alert(err.message || "Failed to settle group.");
     }
   };
 
@@ -190,6 +220,12 @@ export default function GroupDetail({
           <button className="btn-primary btn-add-member" onClick={() => setShowAddMember(true)}>
             <IconPlus /> Add Member
           </button>
+          {/* 🔥 TOMBOL SETTLE — muncul jika semua member sudah paid dan user adalah owner */}
+          {isOwner && totalMembers > 0 && paidCount === totalMembers && (
+            <button className="btn-primary" onClick={handleSettle} style={{ background: 'var(--green)' }}>
+              💰 Settle
+            </button>
+          )}
         </div>
       </div>
 

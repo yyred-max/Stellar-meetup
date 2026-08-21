@@ -13,7 +13,7 @@ import { kit } from "./wallet";
 import { Group, Member } from "../App";
 
 // 🔥 PERBAIKAN: Gunakan CONTRACT_ID dari deploy terakhir
-export const CONTRACT_ID = "CDFP4NQRE7FWDHVWNQ5WEHZAXGI4QMKC4OBIQ4OXQ5M7RGMD7EHFOZ6J";
+export const CONTRACT_ID = "CAMGM4NSTMRSRWQWR6DVASIN5LCMFZ7DLO2Q7GJQTY3G7R7EW2DFSEVU";
 export const RPC_URL = "https://soroban-testnet.stellar.org";
 export const server = new rpc.Server(RPC_URL);
 const contract = new Contract(CONTRACT_ID);
@@ -98,6 +98,7 @@ export async function getGroups(owner: string): Promise<Group[]> {
         owner: String(item.owner),
         totalShare: Number(item.total_share) || 0,
         members: [], // kontrak tidak kembalikan member
+        settled: Boolean(item.settled), // tambahkan untuk kompatibilitas
       })).filter((g: Group) => g.owner === owner);
     }
     return [];
@@ -119,6 +120,7 @@ export async function getGroupsByMember(member: string): Promise<Group[]> {
         owner: String(item.owner),
         totalShare: Number(item.total_share) || 0,
         members: [],
+        settled: Boolean(item.settled),
       }));
     }
     return [];
@@ -199,6 +201,22 @@ export async function deleteGroup(groupId: bigint, owner: string) {
   if (!owner) throw new Error("Wallet not connected.");
   return callContract(
     "delete_group",
+    [
+      nativeToScVal(groupId, { type: "u64" }),
+      new Address(owner).toScVal(),
+    ],
+    owner
+  );
+}
+
+// ================================================================
+// 🆕 Settle group (inter-contract communication)
+// ================================================================
+export async function settleGroup(groupId: bigint, owner: string) {
+  if (!owner) throw new Error("Wallet not connected.");
+  if (groupId <= 0n) throw new Error("Group ID must be > 0.");
+  return callContract(
+    "settle_group",
     [
       nativeToScVal(groupId, { type: "u64" }),
       new Address(owner).toScVal(),
