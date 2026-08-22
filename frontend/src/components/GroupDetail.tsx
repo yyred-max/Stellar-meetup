@@ -218,33 +218,52 @@ export default function GroupDetail({
       </div>
 
       <div className="group-detail-header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <h1 className="group-detail-title">{group.name}</h1>
-          {group.settled && (
-            <span className="badge-completed" style={{ background: 'var(--green)', color: '#fff', padding: '4px 12px', borderRadius: '20px', fontSize: '14px' }}>
-              ✅ Settled
-            </span>
-          )}
-        </div>
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-          {isOwner && !group.settled && (
+        <h1 className="group-detail-title">{group.name}</h1>
+        <div className="group-actions-row">
+          {isOwner && (
             <>
-              <button className="btn-secondary" onClick={() => setIsEditing(true)}>Edit</button>
-              <button className="btn-secondary" onClick={handleDelete} style={{ color: 'var(--red)' }}>Delete</button>
+              <button
+                className="btn-secondary group-action-btn"
+                onClick={() => setIsEditing(true)}
+              >
+                Edit
+              </button>
+              <button
+                className="btn-secondary group-action-btn"
+                onClick={handleDelete}
+                style={{ color: 'var(--red)' }}
+              >
+                Delete
+              </button>
             </>
           )}
-          {!group.settled && (
-            <button className="btn-primary" onClick={() => setShowAddMember(true)}>
-              <IconPlus /> Add Member
-            </button>
-          )}
+          <button
+            className="btn-primary group-action-btn"
+            onClick={() => setShowAddMember(true)}
+          >
+            <IconPlus /> Add Member
+          </button>
           {isOwner && totalMembers > 0 && paidCount === totalMembers && !group.settled && (
-            <button className="btn-primary" onClick={handleSettle} style={{ background: 'var(--green)' }}>
+            <button
+              className="btn-primary group-action-btn"
+              onClick={handleSettle}
+              style={{ background: 'var(--green)' }}
+            >
               <IconCreditCard /> Settle
             </button>
           )}
           {group.settled && (
-            <span className="badge-completed" style={{ background: 'var(--green)', color: '#fff', padding: '8px 16px', borderRadius: '8px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+            <span
+              className="badge-completed group-action-btn"
+              style={{
+                background: 'var(--green)',
+                color: '#fff',
+                borderRadius: '8px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+              }}
+            >
               <IconCheck /> Already Settled
             </span>
           )}
