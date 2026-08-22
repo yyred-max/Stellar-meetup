@@ -13,7 +13,7 @@ import { kit } from "./wallet";
 import { Group, Member } from "../App";
 
 // 🔥 PERBAIKAN: Gunakan CONTRACT_ID dari deploy terakhir
-export const CONTRACT_ID = "CAMGM4NSTMRSRWQWR6DVASIN5LCMFZ7DLO2Q7GJQTY3G7R7EW2DFSEVU";
+export const CONTRACT_ID = "CA7L7QWGLBGGDL2OLTJVJRKJ5UBUMEUIZRIE2FMCGAR2QFATO4L7CMG3";
 export const RPC_URL = "https://soroban-testnet.stellar.org";
 export const server = new rpc.Server(RPC_URL);
 const contract = new Contract(CONTRACT_ID);

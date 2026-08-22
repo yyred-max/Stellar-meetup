@@ -1,3 +1,7 @@
+// ============================================================
+// App.tsx — Final (sudah ditambahkan markGroupSettled & onSettled)
+// ============================================================
+
 // src/App.tsx
 import { useRef, useState, useEffect } from "react";
 import WalletConnect, { WalletConnectHandle, WalletStatus } from "./components/WalletConnect";
@@ -72,7 +76,7 @@ function App() {
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [activities, setActivities] = useState<Activity[]>([]);
 
-  // ===== FUNGSI LOAD DATA DARI BLOCKCHAIN DENGAN FALLBACK LOCALSTORAGE =====
+  // ===== FUNGSI LOAD DATA DARI BLOCKCHAIN =====
   const loadGroups = async () => {
     if (!address) {
       console.warn("⛔ loadGroups: address is null");
@@ -123,15 +127,11 @@ function App() {
 
       console.log("📦 allGroups with members:", allGroups);
 
-      // ✅ PERBAIKAN: Selalu set state dengan hasil dari blockchain,
-      //    apapun isinya (termasuk array kosong). Jangan fallback ke localStorage
-      //    hanya karena hasilnya kosong.
       setGroups(allGroups);
       localStorage.setItem(`splitbill_groups_${address}`, JSON.stringify(allGroups));
 
     } catch (err) {
       console.error("❌ Failed to load groups:", err);
-      // ⚠️ Fallback ke localStorage HANYA jika terjadi error (network, RPC, dll.)
       const cached = localStorage.getItem(`splitbill_groups_${address}`);
       if (cached) {
         try {
@@ -157,7 +157,7 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [walletStatus, address]);
 
-  // ===== SIMPAN KE LOCALSTORAGE SAAT GROUPS BERUBAH (sebagai cache) =====
+  // ===== SIMPAN KE LOCALSTORAGE SAAT GROUPS BERUBAH =====
   useEffect(() => {
     if (address && groups.length > 0) {
       localStorage.setItem(`splitbill_groups_${address}`, JSON.stringify(groups));
@@ -222,7 +222,6 @@ function App() {
           : g
       )
     );
-    // Tambahkan activity
     const group = groups.find(g => g.id === groupId);
     if (group) {
       addActivity({
@@ -231,6 +230,13 @@ function App() {
         description: `Amount: ${group.members.find(m => m.address === memberAddress)?.share} XLM`,
       });
     }
+  };
+
+  // ===== FUNGSI UNTUK MENANDAI GROUP SUDAH SETTLED =====
+  const markGroupSettled = (groupId: string) => {
+    setGroups((prev) =>
+      prev.map((g) => (g.id === groupId ? { ...g, settled: true } : g))
+    );
   };
 
   // ===== FUNGSI UNTUK BUKA HALAMAN DETAIL GRUP =====
@@ -335,6 +341,7 @@ function App() {
         onGoActivity={() => setPage("activity")}
         onActivityAdd={addActivity}
         onRefresh={loadGroups}
+        onSettled={markGroupSettled}   // ⬅️ BARU
       />
     );
   }
@@ -352,7 +359,7 @@ function App() {
   }
 
   // ============================================================
-  //  LANDING PAGE (belum connect atau demo)
+  //  LANDING PAGE
   // ============================================================
   return (
     <div className="app">

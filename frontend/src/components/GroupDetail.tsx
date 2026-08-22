@@ -2,7 +2,7 @@
 import { useState } from "react";
 import AddMemberModal from "./AddMemberModal";
 import PayShareModal from "./PayShareModal";
-import { IconPlus, IconLogout, IconUsers, IconCheck, IconCreditCard } from "./Icons"; // 🔥 tambah IconCheck & IconCreditCard
+import { IconPlus, IconLogout, IconUsers, IconCheck, IconCreditCard } from "./Icons";
 import type { Group, Member } from "./Groups";
 import type { Activity } from "../App";
 import { addMember, payShare, updateGroup, deleteGroup, settleGroup } from "../lib/contract";
@@ -18,6 +18,7 @@ interface GroupDetailProps {
   onGoActivity: () => void;
   onActivityAdd?: (activity: Omit<Activity, 'id' | 'timestamp'>) => void;
   onRefresh?: () => void;
+  onSettled: (groupId: string) => void;
 }
 
 function shortAddr(addr: string) {
@@ -36,6 +37,7 @@ export default function GroupDetail({
   onGoActivity,
   onActivityAdd,
   onRefresh,
+  onSettled,
 }: GroupDetailProps) {
   const [showAddMember, setShowAddMember] = useState(false);
   const [payTarget, setPayTarget] = useState<Member | null>(null);
@@ -50,8 +52,10 @@ export default function GroupDetail({
     onAddMember(group.id, member);
   };
 
-  const handleAddMemberContract = async (memberAddress: string, share: number) => {
+  const handleAddMemberContract = async (memberAddress: string, share: number): Promise<{ hash: string }> => {
     if (!address) throw new Error("Wallet not connected");
+    if (group.settled) throw new Error("This group has already been settled. Cannot add new members.");
+    
     let groupId: bigint;
     try {
       groupId = BigInt(group.id);
@@ -59,13 +63,15 @@ export default function GroupDetail({
       throw new Error("Invalid group ID. Please create a new group.");
     }
     if (groupId <= 0n) throw new Error("Invalid group ID");
+    
     const shareAmount = BigInt(Math.round(share));
     if (shareAmount <= 0n) throw new Error("Share must be > 0");
+    
     const result = await addMember(groupId, group.owner, memberAddress, shareAmount);
     return { hash: result.hash };
   };
 
-  const handlePayShareContract = async (memberAddress: string, amount: number) => {
+  const handlePayShareContract = async (memberAddress: string, amount: number): Promise<{ hash: string }> => {
     if (!address) throw new Error("Wallet not connected");
     let groupId: bigint;
     try {
@@ -110,7 +116,6 @@ export default function GroupDetail({
       return;
     }
 
-    // 🔥 Validasi ID
     let groupId: bigint;
     try {
       console.log("🧪 group.id from state:", group.id, "type:", typeof group.id);
@@ -146,7 +151,6 @@ export default function GroupDetail({
     }
   };
 
-  // 🔥 HANDLE SETTLE
   const handleSettle = async () => {
     if (!address) return;
     if (address !== group.owner) {
@@ -172,6 +176,7 @@ export default function GroupDetail({
         title: `Group "${group.name}" settled`,
         description: `Total collected: ${result} XLM`,
       });
+      onSettled(group.id);
       if (onRefresh) onRefresh();
       onGoGroups();
     } catch (err: any) {
@@ -212,54 +217,34 @@ export default function GroupDetail({
         <span className="crumb-current">{group.name}</span>
       </div>
 
-      
       <div className="group-detail-header">
-        <h1 className="group-detail-title">{group.name}</h1>
-        <div className="group-actions-row">
-          {isOwner && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <h1 className="group-detail-title">{group.name}</h1>
+          {group.settled && (
+            <span className="badge-completed" style={{ background: 'var(--green)', color: '#fff', padding: '4px 12px', borderRadius: '20px', fontSize: '14px' }}>
+              ✅ Settled
+            </span>
+          )}
+        </div>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          {isOwner && !group.settled && (
             <>
-              <button
-                className="btn-secondary group-action-btn"
-                onClick={() => setIsEditing(true)}
-              >
-                Edit
-              </button>
-              <button
-                className="btn-secondary group-action-btn"
-                onClick={handleDelete}
-                style={{ color: 'var(--red)' }}
-              >
-                Delete
-              </button>
+              <button className="btn-secondary" onClick={() => setIsEditing(true)}>Edit</button>
+              <button className="btn-secondary" onClick={handleDelete} style={{ color: 'var(--red)' }}>Delete</button>
             </>
           )}
-          <button
-            className="btn-primary group-action-btn"
-            onClick={() => setShowAddMember(true)}
-          >
-            <IconPlus /> Add Member
-          </button>
+          {!group.settled && (
+            <button className="btn-primary" onClick={() => setShowAddMember(true)}>
+              <IconPlus /> Add Member
+            </button>
+          )}
           {isOwner && totalMembers > 0 && paidCount === totalMembers && !group.settled && (
-            <button
-              className="btn-primary group-action-btn"
-              onClick={handleSettle}
-              style={{ background: 'var(--green)' }}
-            >
+            <button className="btn-primary" onClick={handleSettle} style={{ background: 'var(--green)' }}>
               <IconCreditCard /> Settle
             </button>
           )}
           {group.settled && (
-            <span
-              className="badge-completed group-action-btn"
-              style={{
-                background: 'var(--green)',
-                color: '#fff',
-                borderRadius: '8px',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '4px',
-              }}
-            >
+            <span className="badge-completed" style={{ background: 'var(--green)', color: '#fff', padding: '8px 16px', borderRadius: '8px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
               <IconCheck /> Already Settled
             </span>
           )}
@@ -309,7 +294,6 @@ export default function GroupDetail({
               {paidCount}/{totalMembers} Paid
             </span>
           </div>
-          {/* 🔥 Status settled */}
           <div className="summary-row">
             <span>Settlement</span>
             <strong className={group.settled ? "status-paid" : "status-pending"}>

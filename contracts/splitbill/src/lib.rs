@@ -1,3 +1,7 @@
+// ============================================================
+// lib.rs — Final (tambahkan pengecekan settled di add_member)
+// ============================================================
+
 #![no_std]
 
 use soroban_sdk::{
@@ -13,7 +17,7 @@ pub struct Group {
     pub owner: Address,
     pub total_members: u32,
     pub members_paid: u32,
-    pub settled: bool,              // ⬅️ BARU: sudah ditarik dananya atau belum
+    pub settled: bool,
 }
 
 #[contracttype]
@@ -34,23 +38,20 @@ pub enum SplitBillError {
     IncorrectAmount = 3,
     GroupNotFound = 4,
     NotOwner = 5,
-    NotFullyPaid = 6,                // ⬅️ BARU: settle dipanggil sebelum semua lunas
-    AlreadySettled = 7,               // ⬅️ BARU: cegah tarik dana dua kali
+    NotFullyPaid = 6,
+    AlreadySettled = 7,
 }
 
 const GROUP_DATA: Symbol = symbol_short!("GROUPS");
 const MEMBER_DATA: Symbol = symbol_short!("MEMBERS");
 const NEXT_ID: Symbol = symbol_short!("NEXT_ID");
-const TOKEN_KEY: Symbol = symbol_short!("TOKEN");      // ⬅️ BARU
+const TOKEN_KEY: Symbol = symbol_short!("TOKEN");
 
 #[contract]
 pub struct SplitBillContract;
 
 #[contractimpl]
 impl SplitBillContract {
-    // ============================================================
-    // initialize() — WAJIB dipanggil SEKALI setelah deploy
-    // ============================================================
     pub fn initialize(env: Env, native_token: Address) {
         env.storage().instance().set(&TOKEN_KEY, &native_token);
     }
@@ -83,7 +84,7 @@ impl SplitBillContract {
             owner: owner.clone(),
             total_members: 0,
             members_paid: 0,
-            settled: false,             // ⬅️ BARU
+            settled: false,
         };
 
         groups.push_back(group.clone());
@@ -96,14 +97,38 @@ impl SplitBillContract {
         group
     }
 
+    // ⬇️ DIUBAH: return type menjadi Result, tambah pengecekan settled
     pub fn add_member(
         env: Env,
         group_id: u64,
         owner: Address,
         member: Address,
         share_amount: i128,
-    ) -> String {
+    ) -> Result<String, SplitBillError> {
         owner.require_auth();
+
+        // 🔥 Cek apakah grup sudah settled
+        let groups: Vec<Group> = env
+            .storage()
+            .instance()
+            .get(&GROUP_DATA)
+            .unwrap_or(Vec::new(&env));
+
+        let mut group_found = false;
+        let mut group_settled = false;
+        for g in groups.iter() {
+            if g.id == group_id {
+                group_found = true;
+                group_settled = g.settled;
+                break;
+            }
+        }
+        if !group_found {
+            return Err(SplitBillError::GroupNotFound);
+        }
+        if group_settled {
+            return Err(SplitBillError::AlreadySettled);
+        }
 
         let mut members: Vec<Member> = env
             .storage()
@@ -120,27 +145,28 @@ impl SplitBillContract {
         members.push_back(member_data);
         env.storage().instance().set(&MEMBER_DATA, &members);
 
-        let mut groups: Vec<Group> = env
+        let mut groups_mut: Vec<Group> = env
             .storage()
             .instance()
             .get(&GROUP_DATA)
             .unwrap_or(Vec::new(&env));
 
-        for i in 0..groups.len() {
-            let mut g = groups.get(i).unwrap();
+        for i in 0..groups_mut.len() {
+            let mut g = groups_mut.get(i).unwrap();
             if g.id == group_id {
                 g.total_members += 1;
-                groups.set(i, g);
+                groups_mut.set(i, g);
                 break;
             }
         }
-        env.storage().instance().set(&GROUP_DATA, &groups);
+        env.storage().instance().set(&GROUP_DATA, &groups_mut);
 
         env.events()
             .publish((symbol_short!("m_add"), group_id), member);
 
-        String::from_str(&env, "Member berhasil ditambahkan")
+        Ok(String::from_str(&env, "Member berhasil ditambahkan"))
     }
+
 
     // ============================================================
     // pay_share — transfer XLM dari member ke KONTRAK (escrow)
