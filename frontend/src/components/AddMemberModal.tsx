@@ -17,10 +17,6 @@ interface AddMemberModalProps {
   onAdded: (member: Member) => void;
   onViewGroup?: () => void;
   onActivityAdd?: (activity: Omit<Activity, 'id' | 'timestamp'>) => void;
-  /**
-   * 🔥 Fungsi untuk memanggil kontrak Soroban yang sebenarnya.
-   * Jika tidak diberikan, modal akan menggunakan simulasi (hanya untuk testing UI).
-   */
   onAddMember?: (address: string, share: number) => Promise<{ hash: string }>;
 }
 
@@ -54,7 +50,7 @@ export default function AddMemberModal({
   onAdded,
   onViewGroup,
   onActivityAdd,
-  onAddMember, // ← prop baru
+  onAddMember,
 }: AddMemberModalProps) {
   const [step, setStep] = useState<Step>("form");
   const [walletAddress, setWalletAddress] = useState("");
@@ -72,7 +68,6 @@ export default function AddMemberModal({
     setStep("processing");
 
     try {
-      // Gunakan onAddMember jika ada, fallback ke simulasi
       const result = await (onAddMember
         ? onAddMember(walletAddress.trim(), shareValue)
         : simulateAddMember());
@@ -110,7 +105,6 @@ export default function AddMemberModal({
   return (
     <div className="modal-overlay">
       <div className="modal-card">
-        {/* ===== FORM ===== */}
         {step === "form" && (
           <form onSubmit={handleSubmit}>
             <div className="modal-header">
@@ -195,7 +189,6 @@ export default function AddMemberModal({
           </form>
         )}
 
-        {/* ===== PROCESSING ===== */}
         {step === "processing" && (
           <div className="modal-processing">
             <div className="modal-header">
@@ -221,7 +214,6 @@ export default function AddMemberModal({
           </div>
         )}
 
-        {/* ===== SUCCESS ===== */}
         {step === "success" && (
           <div className="modal-success">
             <div className="success-icon">
@@ -251,11 +243,9 @@ export default function AddMemberModal({
               </div>
               <div className="success-row">
                 <span>Transaction Hash</span>
-                <span className="success-hash">
-                  {txHash}
-                  <button className="hash-copy" onClick={handleCopy} aria-label="Copy hash">
-                    <IconCopy />
-                  </button>
+                <span className="success-hash" title={txHash}>
+                  {txHash.slice(0, 10)}...{txHash.slice(-6)}
+                  <button className="hash-copy" onClick={handleCopy}><IconCopy /></button>
                 </span>
               </div>
               {copied && <span className="copied-toast">Copied!</span>}

@@ -163,8 +163,8 @@ export default function PayShareModal({
               <div className="success-row"><span>Status</span><span className="status-badge status-paid"><IconCheck /> Paid</span></div>
               <div className="success-row">
                 <span>Transaction Hash</span>
-                <span className="success-hash">
-                  {txHash}
+                <span className="success-hash" title={txHash}>
+                  {txHash.slice(0, 10)}...{txHash.slice(-6)}
                   <button className="hash-copy" onClick={handleCopy}><IconCopy /></button>
                 </span>
               </div>
