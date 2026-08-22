@@ -12,7 +12,6 @@ import {
 import { kit } from "./wallet";
 import { Group, Member } from "../App";
 
-// 🔥 PERBAIKAN: Gunakan CONTRACT_ID dari deploy terakhir
 export const CONTRACT_ID = "CA7L7QWGLBGGDL2OLTJVJRKJ5UBUMEUIZRIE2FMCGAR2QFATO4L7CMG3";
 export const RPC_URL = "https://soroban-testnet.stellar.org";
 export const server = new rpc.Server(RPC_URL);
@@ -86,7 +85,6 @@ export async function callContract(method: string, args: any[], sourcePublicKey:
   }
 }
 
-// 🔥 getGroups dan getGroupsByMember tidak punya members di kontrak
 export async function getGroups(owner: string): Promise<Group[]> {
   if (!owner) return [];
   try {
@@ -97,8 +95,8 @@ export async function getGroups(owner: string): Promise<Group[]> {
         name: String(item.name),
         owner: String(item.owner),
         totalShare: Number(item.total_share) || 0,
-        members: [], // kontrak tidak kembalikan member
-        settled: Boolean(item.settled), // tambahkan untuk kompatibilitas
+        members: [],
+        settled: Boolean(item.settled),
       })).filter((g: Group) => g.owner === owner);
     }
     return [];
@@ -130,14 +128,14 @@ export async function getGroupsByMember(member: string): Promise<Group[]> {
   }
 }
 
-// 🔥 getMembers: gunakan field share_amount, bukan share
+// 🔥 getMembers: konversi stroop → XLM
 export async function getMembers(groupId: bigint, sourcePublicKey: string): Promise<Member[]> {
   try {
     const result = await viewContract("get_members", [nativeToScVal(groupId, { type: "u64" })], sourcePublicKey);
     if (Array.isArray(result)) {
       return result.map((m: any) => ({
         address: String(m.address),
-        share: Number(m.share_amount) || 0,
+        share: Number(m.share_amount) / 10_000_000, // ✅ konversi
         paid: Boolean(m.has_paid),
       }));
     }
@@ -177,50 +175,31 @@ export async function payShare(groupId: bigint, member: string, amount: bigint) 
   );
 }
 
-// ================================================================
-// 🆕 Update group
-// ================================================================
 export async function updateGroup(groupId: bigint, owner: string, newName: string) {
   if (!owner) throw new Error("Wallet not connected.");
   if (!newName.trim()) throw new Error("Name cannot be empty.");
   return callContract(
     "update_group",
-    [
-      nativeToScVal(groupId, { type: "u64" }),
-      new Address(owner).toScVal(),
-      nativeToScVal(newName.trim(), { type: "string" }),
-    ],
+    [nativeToScVal(groupId, { type: "u64" }), new Address(owner).toScVal(), nativeToScVal(newName.trim(), { type: "string" })],
     owner
   );
 }
 
-// ================================================================
-// 🆕 Delete group
-// ================================================================
 export async function deleteGroup(groupId: bigint, owner: string) {
   if (!owner) throw new Error("Wallet not connected.");
   return callContract(
     "delete_group",
-    [
-      nativeToScVal(groupId, { type: "u64" }),
-      new Address(owner).toScVal(),
-    ],
+    [nativeToScVal(groupId, { type: "u64" }), new Address(owner).toScVal()],
     owner
   );
 }
 
-// ================================================================
-// 🆕 Settle group (inter-contract communication)
-// ================================================================
 export async function settleGroup(groupId: bigint, owner: string) {
   if (!owner) throw new Error("Wallet not connected.");
   if (groupId <= 0n) throw new Error("Group ID must be > 0.");
   return callContract(
     "settle_group",
-    [
-      nativeToScVal(groupId, { type: "u64" }),
-      new Address(owner).toScVal(),
-    ],
+    [nativeToScVal(groupId, { type: "u64" }), new Address(owner).toScVal()],
     owner
   );
 }

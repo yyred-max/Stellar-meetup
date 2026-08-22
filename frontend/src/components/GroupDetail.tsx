@@ -52,10 +52,11 @@ export default function GroupDetail({
     onAddMember(group.id, member);
   };
 
+  // 🔥 Perbaikan: konversi XLM → stroop (×10_000_000) sebelum kirim ke kontrak
   const handleAddMemberContract = async (memberAddress: string, share: number): Promise<{ hash: string }> => {
     if (!address) throw new Error("Wallet not connected");
     if (group.settled) throw new Error("This group has already been settled. Cannot add new members.");
-    
+
     let groupId: bigint;
     try {
       groupId = BigInt(group.id);
@@ -63,14 +64,16 @@ export default function GroupDetail({
       throw new Error("Invalid group ID. Please create a new group.");
     }
     if (groupId <= 0n) throw new Error("Invalid group ID");
-    
-    const shareAmount = BigInt(Math.round(share));
+
+    // ✅ konversi XLM → stroop
+    const shareAmount = BigInt(Math.round(share * 10_000_000));
     if (shareAmount <= 0n) throw new Error("Share must be > 0");
-    
+
     const result = await addMember(groupId, group.owner, memberAddress, shareAmount);
     return { hash: result.hash };
   };
 
+  // 🔥 Perbaikan: konversi XLM → stroop (×10_000_000) sebelum kirim ke kontrak
   const handlePayShareContract = async (memberAddress: string, amount: number): Promise<{ hash: string }> => {
     if (!address) throw new Error("Wallet not connected");
     let groupId: bigint;
@@ -79,8 +82,11 @@ export default function GroupDetail({
     } catch (e) {
       throw new Error("Invalid group ID");
     }
-    const amountStroop = BigInt(Math.round(amount));
+
+    // ✅ konversi XLM → stroop
+    const amountStroop = BigInt(Math.round(amount * 10_000_000));
     if (amountStroop <= 0n) throw new Error("Amount must be > 0");
+
     const result = await payShare(groupId, memberAddress, amountStroop);
     return { hash: result.hash };
   };
