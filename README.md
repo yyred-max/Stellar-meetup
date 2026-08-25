@@ -215,9 +215,23 @@ Expected output: 4+ passing tests.
 
 ## 🖼️ Screenshots
 
-_Add before submitting:_
+### Dashboard (Account 1)
+![Dashboard Account 1](./screenshots/Dashboard_akun1.png)
 
-- Wallet selection modal (multi-wallet support) → `frontend/public/screenshots/wallet-options.png`
+### Groups Page (Account 1)
+![Groups Page Account 1](./screenshots/Group_akun1.png)
+
+### Group Detail - After Creation (Account 1)
+![Group Detail Success](./screenshots/Group_akun1_success.png)
+
+### Group Detail - Before Payment (Account 2)
+![Group Detail Account 2](./screenshots/Group_akun2.png)
+
+### Pay Share Modal
+![Pay Share Modal](./screenshots/PayShare_akun2.png)
+
+### Group Detail - After Payment (Account 2)
+![Group Detail Paid](./screenshots/Group_paid_akun2.png)
 
 ---
 
