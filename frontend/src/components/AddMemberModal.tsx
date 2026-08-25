@@ -7,7 +7,7 @@ import {
   IconSpinner,
   IconCopy,
 } from "./Icons";
-import type { Member } from "./Groups";
+import type { Member } from "../App"; // ✅ import dari App, bukan Groups
 import type { Activity } from "../App";
 
 interface AddMemberModalProps {
@@ -105,6 +105,7 @@ export default function AddMemberModal({
   return (
     <div className="modal-overlay">
       <div className="modal-card">
+        {/* ===== FORM ===== */}
         {step === "form" && (
           <form onSubmit={handleSubmit}>
             <div className="modal-header">
@@ -189,6 +190,7 @@ export default function AddMemberModal({
           </form>
         )}
 
+        {/* ===== PROCESSING ===== */}
         {step === "processing" && (
           <div className="modal-processing">
             <div className="modal-header">
@@ -214,6 +216,7 @@ export default function AddMemberModal({
           </div>
         )}
 
+        {/* ===== SUCCESS ===== */}
         {step === "success" && (
           <div className="modal-success">
             <div className="success-icon">
@@ -245,7 +248,9 @@ export default function AddMemberModal({
                 <span>Transaction Hash</span>
                 <span className="success-hash" title={txHash}>
                   {txHash.slice(0, 10)}...{txHash.slice(-6)}
-                  <button className="hash-copy" onClick={handleCopy}><IconCopy /></button>
+                  <button className="hash-copy" onClick={handleCopy} aria-label="Copy hash">
+                    <IconCopy />
+                  </button>
                 </span>
               </div>
               {copied && <span className="copied-toast">Copied!</span>}
