@@ -320,6 +320,7 @@ function App() {
           : g
       )
     );
+  
     const group = groups.find(g => g.id === groupId);
     if (group) {
       addActivity({
@@ -328,6 +329,7 @@ function App() {
         description: `Amount: ${group.members.find(m => m.address === memberAddress)?.share} XLM`,
       });
     }
+    loadGroups();
   };
 
   // ===== FUNGSI UNTUK MENANDAI GROUP SUDAH SETTLED =====
