@@ -97,6 +97,8 @@ export async function getGroups(owner: string): Promise<Group[]> {
         totalShare: Number(item.total_share) || 0,
         members: [],
         settled: Boolean(item.settled),
+        isRecurring: Boolean(item.is_recurring), // ⬅️ BARU
+        cycle: Number(item.cycle) || 1,          // ⬅️ BARU
       })).filter((g: Group) => g.owner === owner);
     }
     return [];
@@ -119,6 +121,8 @@ export async function getGroupsByMember(member: string): Promise<Group[]> {
         totalShare: Number(item.total_share) || 0,
         members: [],
         settled: Boolean(item.settled),
+        isRecurring: Boolean(item.is_recurring),
+        cycle: Number(item.cycle) || 1,
       }));
     }
     return [];
@@ -146,10 +150,18 @@ export async function getMembers(groupId: bigint, sourcePublicKey: string): Prom
   }
 }
 
-export async function createGroup(owner: string, name: string) {
+export async function createGroup(owner: string, name: string, isRecurring: boolean = false) {
   if (!owner) throw new Error("Wallet not connected.");
   if (!name.trim()) throw new Error("Group name cannot be empty.");
-  return callContract("create_group", [new Address(owner).toScVal(), nativeToScVal(name.trim(), { type: "string" })], owner);
+  return callContract(
+    "create_group",
+    [
+      new Address(owner).toScVal(),
+      nativeToScVal(name.trim(), { type: "string" }),
+      nativeToScVal(isRecurring, { type: "bool" }),
+    ],
+    owner
+  );
 }
 
 export async function addMember(groupId: bigint, owner: string, member: string, shareAmount: bigint) {

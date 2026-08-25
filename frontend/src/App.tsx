@@ -1,7 +1,3 @@
-// ============================================================
-// App.tsx — Final (sudah ditambahkan markGroupSettled & onSettled)
-// ============================================================
-
 // src/App.tsx
 import { useRef, useState, useEffect } from "react";
 import WalletConnect, { WalletConnectHandle, WalletStatus } from "./components/WalletConnect";
@@ -9,7 +5,8 @@ import Dashboard from "./components/Dashboard";
 import Groups from "./components/Groups";
 import ActivityPage from "./components/Activity";
 import GroupDetail from "./components/GroupDetail";
-import { getGroups, getGroupsByMember, getMembers } from "./lib/contract";
+import { getGroups, getGroupsByMember, getMembers, server, CONTRACT_ID } from "./lib/contract";
+import { scValToNative } from "@stellar/stellar-sdk"; // 🔥 import fungsi konversi
 import {
   IconWallet,
   IconCheck,
@@ -39,6 +36,8 @@ export interface Group {
   totalShare: number;
   members: Member[];
   settled: boolean;
+  isRecurring: boolean;
+  cycle: number;
 }
 
 export interface Activity {
@@ -67,6 +66,7 @@ function App() {
   const [showErrorToast, setShowErrorToast] = useState(false);
   const [isDemo, setIsDemo] = useState(false);
   const [isLoadingGroups, setIsLoadingGroups] = useState(false);
+  const [lastLedger, setLastLedger] = useState<number>(0);
 
   // ===== PAGE STATE =====
   const [page, setPage] = useState<"landing" | "dashboard" | "groups" | "activity" | "groupDetail">("landing");
@@ -75,6 +75,110 @@ function App() {
   const [groups, setGroups] = useState<Group[]>([]);
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [activities, setActivities] = useState<Activity[]>([]);
+
+  // ===== FUNGSI FETCH EVENT DARI BLOCKCHAIN (sudah diperbaiki) =====
+  const fetchEvents = async (addr: string) => {
+    if (!addr) return;
+    try {
+      const savedLedger = parseInt(localStorage.getItem(`splitbill_lastLedger_${addr}`) || "0");
+      const start = savedLedger + 1;
+
+      const response = await server.getEvents({
+        filters: [{ contractIds: [CONTRACT_ID] }],
+        startLedger: start,
+        limit: 50,
+      });
+
+      if (response.events.length === 0) return;
+
+      const newActivities: Activity[] = [];
+      let latestLedger = savedLedger;
+
+      response.events.forEach((ev) => {
+        // 🔥 Konversi ScVal → native JS
+        const topic = scValToNative(ev.topic[0]) as string;
+        const value = scValToNative(ev.value);
+
+        let activity: Activity | null = null;
+
+        if (topic === "g_create") {
+          const groupId = value as string;
+          activity = {
+            id: ev.id,
+            type: "group_created",
+            title: `Group created: ${groupId}`,
+            description: `Group ID: ${groupId}`,
+            timestamp: new Date().toISOString(),
+          };
+        } else if (topic === "m_add") {
+          const member = value as string;
+          activity = {
+            id: ev.id,
+            type: "member_added",
+            title: `Member added`,
+            description: `Address: ${member}`,
+            timestamp: new Date().toISOString(),
+          };
+        } else if (topic === "m_paid") {
+          const [member, amount] = value as [string, number];
+          activity = {
+            id: ev.id,
+            type: "share_paid",
+            title: `Payment received: ${amount} XLM`,
+            description: `From: ${member}`,
+            timestamp: new Date().toISOString(),
+          };
+        } else if (topic === "g_settle") {
+          const [owner, total] = value as [string, number];
+          activity = {
+            id: ev.id,
+            type: "share_paid",
+            title: `Group settled: ${total} XLM`,
+            description: `Owner: ${owner}`,
+            timestamp: new Date().toISOString(),
+          };
+        }
+
+        if (activity) {
+          newActivities.push(activity);
+        }
+        if (ev.ledger > latestLedger) {
+          latestLedger = ev.ledger;
+        }
+      });
+
+      if (newActivities.length > 0) {
+        setActivities((prev) => {
+          const existingIds = new Set(prev.map(a => a.id));
+          const uniqueNew = newActivities.filter(a => !existingIds.has(a.id));
+          return [...uniqueNew, ...prev];
+        });
+        localStorage.setItem(`splitbill_lastLedger_${addr}`, String(latestLedger));
+        setLastLedger(latestLedger);
+      }
+    } catch (err) {
+      console.error("Error fetching events:", err);
+    }
+  };
+
+  // ===== PANGGIL FETCH EVENTS SECARA PERIODIK =====
+  useEffect(() => {
+    if (walletStatus !== "connected" || !address) return;
+
+    const saved = localStorage.getItem(`splitbill_lastLedger_${address}`);
+    if (saved) {
+      setLastLedger(parseInt(saved));
+    }
+
+    fetchEvents(address);
+
+    const interval = setInterval(() => {
+      fetchEvents(address);
+    }, 15000);
+
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [walletStatus, address]);
 
   // ===== FUNGSI LOAD DATA DARI BLOCKCHAIN =====
   const loadGroups = async () => {
@@ -94,7 +198,6 @@ function App() {
       });
       let allGroups = Array.from(mergedMap.values());
 
-      // 🔥 Ambil daftar member untuk setiap grup
       const groupsWithMembers = await Promise.all(
         allGroups.map(async (g) => {
           try {
@@ -106,15 +209,10 @@ function App() {
               return g;
             }
             const members = await getMembers(groupId, address);
-
-            // 🔥 DEDUPLIKASI MEMBER berdasarkan address
             const uniqueMembers = Array.from(
               new Map(members.map((m) => [m.address, m])).values()
             );
-
-            // 🔥 Hitung ulang totalShare dari member
             const totalShare = uniqueMembers.reduce((sum, m) => sum + m.share, 0);
-
             return { ...g, members: uniqueMembers, totalShare };
           } catch (err) {
             console.error(`Failed to get members for group ${g.id}:`, err);
@@ -341,7 +439,7 @@ function App() {
         onGoActivity={() => setPage("activity")}
         onActivityAdd={addActivity}
         onRefresh={loadGroups}
-        onSettled={markGroupSettled}   // ⬅️ BARU
+        onSettled={markGroupSettled}
       />
     );
   }

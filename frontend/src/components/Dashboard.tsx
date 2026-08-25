@@ -70,7 +70,9 @@ export default function Dashboard({
       owner: address!,
       totalShare: 0,
       members: [],
-      settled: false, // 🔥 tambahkan default
+      settled: false, 
+      isRecurring: false,
+      cycle: 1, 
     };
     onAddGroup(newGroup);
     setShowCreateModal(false);

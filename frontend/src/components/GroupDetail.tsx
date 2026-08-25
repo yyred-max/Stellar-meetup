@@ -3,8 +3,7 @@ import { useState } from "react";
 import AddMemberModal from "./AddMemberModal";
 import PayShareModal from "./PayShareModal";
 import { IconPlus, IconLogout, IconUsers, IconCheck, IconCreditCard } from "./Icons";
-import type { Group, Member } from "./Groups";
-import type { Activity } from "../App";
+import type { Group, Member, Activity } from "../App"; // ✅ hanya import dari App
 import { addMember, payShare, updateGroup, deleteGroup, settleGroup } from "../lib/contract";
 
 interface GroupDetailProps {
@@ -52,7 +51,6 @@ export default function GroupDetail({
     onAddMember(group.id, member);
   };
 
-  // 🔥 Perbaikan: konversi XLM → stroop (×10_000_000) sebelum kirim ke kontrak
   const handleAddMemberContract = async (memberAddress: string, share: number): Promise<{ hash: string }> => {
     if (!address) throw new Error("Wallet not connected");
     if (group.settled) throw new Error("This group has already been settled. Cannot add new members.");
@@ -65,7 +63,6 @@ export default function GroupDetail({
     }
     if (groupId <= 0n) throw new Error("Invalid group ID");
 
-    // ✅ konversi XLM → stroop
     const shareAmount = BigInt(Math.round(share * 10_000_000));
     if (shareAmount <= 0n) throw new Error("Share must be > 0");
 
@@ -73,7 +70,6 @@ export default function GroupDetail({
     return { hash: result.hash };
   };
 
-  // 🔥 Perbaikan: konversi XLM → stroop (×10_000_000) sebelum kirim ke kontrak
   const handlePayShareContract = async (memberAddress: string, amount: number): Promise<{ hash: string }> => {
     if (!address) throw new Error("Wallet not connected");
     let groupId: bigint;
@@ -83,7 +79,6 @@ export default function GroupDetail({
       throw new Error("Invalid group ID");
     }
 
-    // ✅ konversi XLM → stroop
     const amountStroop = BigInt(Math.round(amount * 10_000_000));
     if (amountStroop <= 0n) throw new Error("Amount must be > 0");
 
@@ -226,7 +221,7 @@ export default function GroupDetail({
       <div className="group-detail-header">
         <h1 className="group-detail-title">{group.name}</h1>
         <div className="group-actions-row">
-          {isOwner && (
+          {isOwner && !group.settled && (
             <>
               <button
                 className="btn-secondary group-action-btn"
@@ -243,12 +238,14 @@ export default function GroupDetail({
               </button>
             </>
           )}
-          <button
-            className="btn-primary group-action-btn"
-            onClick={() => setShowAddMember(true)}
-          >
-            <IconPlus /> Add Member
-          </button>
+          {!group.settled && (
+            <button
+              className="btn-primary group-action-btn"
+              onClick={() => setShowAddMember(true)}
+            >
+              <IconPlus /> Add Member
+            </button>
+          )}
           {isOwner && totalMembers > 0 && paidCount === totalMembers && !group.settled && (
             <button
               className="btn-primary group-action-btn"

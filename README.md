@@ -1,99 +1,127 @@
 # SplitBill — Stellar Soroban dApp
 
-**SplitBill** is a group expense tracker application built on a smart contract on **Stellar Soroban** (Testnet). Each group member can pay their share of a bill *on-chain*, with payment status, group ownership, and activity history that are transparent and directly verifiable on the blockchain.
+**SplitBill** is a group expense tracker built on a smart contract deployed to **Stellar Soroban** (Testnet). Each group member pays their share of a bill *on-chain*, with payment status, group ownership, and activity history that are transparent and directly verifiable on the blockchain.
 
-**Live demo:** [stellar-meetup.vercel.app](https://stellar-meetup.vercel.app/)
+🌐 **Live demo:** [stellar-meetup.vercel.app](https://stellar-meetup.vercel.app/)
 
 ---
 
-## Key Features
+## ✅ Level 2 Requirements Checklist
 
-- **Multi-wallet support** — connect via [Stellar Wallets Kit](https://github.com/Creit-Tech/Stellar-Wallets-Kit) (Freighter, Albedo, xBull, LOBSTR, and others)
+| Requirement                     | Status                                                                              |
+| -------------------------------- | ------------------------------------------------------------------------------------ |
+| Custom error types handled       | ✅ `AlreadyPaid`, `NotAMember`, `IncorrectAmount`, `GroupNotFound`, `NotOwner` (5 types) |
+| Contract deployed on testnet      | ✅ `CA7L7QWGLBGGDL2OLTJVJRKJ5UBUMEUIZRIE2FMCGAR2QFATO4L7CMG3`                          |
+| Contract called from frontend     | ✅ `createGroup`, `addMember`, `payShare`, `updateGroup`, `deleteGroup`, `settleGroup` |
+| Transaction status visible        | ✅ Modal with processing → success/fail feedback                                      |
+| 10+ meaningful commits            | ✅ 20+ commits (feat, fix, refactor, docs)                                             |
+| Multi-wallet support              | ✅ Freighter, Albedo, LOBSTR, xBull, Rabet                                             |
+| Real-time event integration       | ✅ Activity feed updates on every transaction                                          |
+
+---
+
+## ✨ Key Features
+
+- **Multi-wallet support** — via [Stellar Wallets Kit](https://github.com/Creit-Tech/Stellar-Wallets-Kit) (Freighter, Albedo, xBull, LOBSTR, Rabet)
 - **Smart contract** for:
   - Creating a group (`create_group`)
   - Renaming a group (`update_group`) — owner only
   - Deleting a group (`delete_group`) — owner only
-  - Adding a member along with their bill share (`add_member`)
-  - Paying a bill share *on-chain* (`pay_share`)
-- **Sequential group IDs** — each new group gets a sequential ID (1, 2, 3, ...) stored in contract storage, ensuring IDs are always accurate whether read or rewritten from the frontend
+  - Adding a member with their bill share (`add_member`)
+  - Paying a share on-chain (`pay_share`)
+  - Escrow settlement (`settle_group`) — funds held in the contract until all members have paid, then withdrawn by the owner in one transaction
+- **Sequential group IDs** — each new group gets an auto-incrementing ID (1, 2, 3, …), avoiding precision-loss issues with large random IDs
 - **Two-layer error handling**:
-  - *Wallet-level*: wallet not found, request rejected, insufficient balance
+  - *Wallet-level*: not found, rejected, insufficient balance
   - *Contract-level*: `AlreadyPaid`, `NotAMember`, `IncorrectAmount`, `GroupNotFound`, `NotOwner`
-- **Complete pages**: Dashboard (summary & statistics), Groups (group list & search/filter), Group Detail (manage members, edit/delete group, pay share), and Activity (group and payment activity history)
-- **Modern UI** — supports dark mode, accessible, and responsive
+- **Full page set**: Dashboard (statistics), Groups (search & filter), Group Detail (manage members, pay, edit/delete, settle), Activity (history feed)
+- **Modern UI** — dark mode, responsive, accessible
 
 ---
 
-## Tech Stack
+## 🧱 Tech Stack
 
-| Component         | Technology                         |
-| ------------------ | ----------------------------------- |
-| Smart contract      | Rust + Soroban SDK                 |
-| Frontend            | React + TypeScript + Vite          |
-| Wallet integration   | `@creit.tech/stellar-wallets-kit` |
-| Blockchain SDK      | `@stellar/stellar-sdk`             |
-| Network              | Stellar Testnet                    |
+| Component          | Technology                          |
+| -------------------- | -------------------------------------- |
+| Smart contract        | Rust + Soroban SDK                     |
+| Frontend               | React + TypeScript + Vite              |
+| Wallet integration     | `@creit.tech/stellar-wallets-kit`     |
+| Blockchain SDK         | `@stellar/stellar-sdk`                |
+| Network                | Stellar Testnet                        |
 
 ---
 
-## Project Structure
+## 📁 Project Structure
 
 ```
-project/
+stellar-meetup/                      # repository root (Rust/Cargo workspace)
 ├── contracts/
-│   └── splitbill/
+│   ├── notes/                       # separate practice contract from earlier learning exercises,
+│   │   ├── src/                     # not used by the SplitBill app — kept for reference only
+│   │   ├── Cargo.toml
+│   │   └── Makefile
+│   └── splitbill/                   # the actual SplitBill smart contract used by this app
 │       ├── src/
-│       │   ├── lib.rs
-│       │   └── test.rs
-│       └── Cargo.toml
-└── frontend/
-    ├── src/
-    │   ├── components/
-    │   │   ├── WalletConnect.tsx
-    │   │   ├── Dashboard.tsx
-    │   │   ├── Groups.tsx
-    │   │   ├── GroupDetail.tsx
-    │   │   ├── Activity.tsx
-    │   │   ├── CreateGroupModal.tsx
-    │   │   ├── AddMemberModal.tsx
-    │   │   └── PayShareModal.tsx
-    │   ├── lib/
-    │   │   ├── wallet.ts
-    │   │   └── contract.ts
-    │   ├── App.tsx
-    │   └── main.tsx
-    ├── index.html
-    ├── package.json
-    └── vite.config.ts
+│       │   ├── lib.rs               # main contract logic
+│       │   └── test.rs              # unit tests
+│       ├── Cargo.toml
+│       └── Makefile
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── WalletConnect.tsx
+│   │   │   ├── Dashboard.tsx
+│   │   │   ├── Groups.tsx
+│   │   │   ├── GroupDetail.tsx
+│   │   │   ├── Activity.tsx
+│   │   │   ├── CreateGroupModal.tsx   # active — used by App.tsx
+│   │   │   ├── AddMemberModal.tsx     # active — used by GroupDetail.tsx
+│   │   │   ├── PayShareModal.tsx      # active — used by GroupDetail.tsx
+│   │   │   ├── CreateGroup.tsx        # ⚠️ legacy, superseded by CreateGroupModal.tsx
+│   │   │   ├── AddMember.tsx          # ⚠️ legacy, superseded by AddMemberModal.tsx
+│   │   │   ├── PayShare.tsx           # ⚠️ legacy, superseded by PayShareModal.tsx
+│   │   │   └── Icons.tsx
+│   │   ├── lib/
+│   │   │   ├── wallet.ts
+│   │   │   └── contract.ts
+│   │   ├── App.tsx
+│   │   ├── main.tsx
+│   │   ├── App.css
+│   │   └── index.css
+│   ├── index.html
+│   ├── package.json
+│   ├── tailwind.config.js
+│   ├── postcss.config.js
+│   └── vite.config.ts
+├── Cargo.toml                       # Rust workspace manifest (covers contracts/notes + contracts/splitbill)
+├── Cargo.lock
+├── target/                          # shared Cargo build output (git-ignored)
+└── README.md
 ```
+
+> **Note:** `contracts/notes/` is a separate contract from earlier learning exercises and is not part of the SplitBill application — only `contracts/splitbill/` is deployed and used by the frontend. The `CreateGroup.tsx` / `AddMember.tsx` / `PayShare.tsx` components are earlier, simpler versions kept in the repo for reference; the app currently uses their `*Modal.tsx` counterparts.
 
 ---
 
-## Setup and Running the Project
+## 🚀 Setup & Running
 
 ### Prerequisites
 
-- [Rust](https://rustup.rs) with the `wasm32-unknown-unknown` or `wasm32v1-none` target
+- [Rust](https://rustup.rs) with the `wasm32v1-none` target
 - [Stellar CLI](https://developers.stellar.org/docs/tools/developer-tools/cli/install-cli)
-- Node.js (v18 or later) and npm
-- A Stellar wallet extension (recommended: [Freighter](https://www.freighter.app))
+- Node.js (v18+) and npm
+- A Stellar wallet extension (e.g. [Freighter](https://www.freighter.app))
 
-### 1. Clone the repository
+### 1. Clone & build the contract
 
 ```bash
 git clone <REPO_URL>
-cd <REPO_NAME>
-```
-
-### 2. Build and test the smart contract
-
-```bash
-cd contracts/splitbill
+cd <REPO_NAME>/contracts/splitbill
 cargo test
 stellar contract build
 ```
 
-### 3. Deploy to testnet (optional — the contract is already deployed, see the address below)
+### 2. Deploy to testnet (optional — already deployed, see address below)
 
 ```bash
 stellar keys generate alice --network testnet --fund
@@ -103,9 +131,9 @@ stellar contract deploy \
   --network testnet
 ```
 
-> **Note:** every time the contract is redeployed, the contract address will change. Be sure to update `CONTRACT_ID` in `frontend/src/lib/contract.ts` after redeploying.
+> **Note:** after redeploying, update `CONTRACT_ID` in `frontend/src/lib/contract.ts`.
 
-### 4. Run the frontend
+### 3. Run the frontend
 
 ```bash
 cd ../../frontend
@@ -113,86 +141,89 @@ npm install
 npm run dev
 ```
 
-Open `http://localhost:5173` in your browser, or try the live version directly at [stellar-meetup.vercel.app](https://stellar-meetup.vercel.app/).
+Open `http://localhost:5173`, or try the [live demo](https://stellar-meetup.vercel.app).
 
-### 5. Connect your wallet
+### 4. Connect a wallet
 
-- Make sure the wallet extension is installed and the network is set to **Testnet**.
-- Click **Connect Wallet** in the app, then select an available wallet.
-- If the account doesn't have a testnet balance yet, top it up via [Friendbot](https://friendbot.stellar.org).
+- Install a wallet extension and set its network to **Testnet**.
+- Click **Connect Wallet** in the app and choose a wallet.
+- If the account has no testnet balance, top up via [Friendbot](https://friendbot.stellar.org).
 
 ---
 
-## Smart Contract (Deployed)
+## 📜 Deployed Contract
 
 **Contract address (testnet):**
-`<TODO: fill in with the CONTRACT_ID from the latest redeploy>`
+`CA7L7QWGLBGGDL2OLTJVJRKJ5UBUMEUIZRIE2FMCGAR2QFATO4L7CMG3`
 
-<!--
-Previous addresses (no longer in use — group IDs in the old contract are incompatible
-due to a change in ID scheme from random u64 to a sequential counter):
-CBFCVRIAUNBRD5BIYX3AHP3RWMEKUQBN4L5GTLFJ4P76I2H6JMYB4PDF
-CACVL5DDKQ3OQO7X3MDM5SQ7VDF4QKGE7KEJGZ46QL2R7XZHFOWGXAGH
-CB35GVI2G7R2P56QIWLUFTDLR2AS4TSFLNUI4DT4YNOGFTEBHZSE36JJ
--->
-
-Verify on Stellar Lab: `https://lab.stellar.org/r/testnet/contract/<CONTRACT_ID>`
+🔍 [View on Stellar Lab](https://lab.stellar.org/r/testnet/contract/CA7L7QWGLBGGDL2OLTJVJRKJ5UBUMEUIZRIE2FMCGAR2QFATO4L7CMG3)
 
 ---
 
-## Example Transaction (Contract Call)
+## 🔁 Example Transaction
 
-Example call to the `create_group` function:
-`<TODO: fill in with a sample tx hash from the active contract>`
+**Transaction hash (`create_group`):**
+`<TODO: paste a recent tx hash from the currently deployed contract>`
 
-View on Stellar Explorer: `https://stellar.expert/explorer/testnet/tx/<TX_HASH>`
-
----
-
-## Error List and Handling
-
-| Layer    | Error                  | Code | When it occurs                                                        |
-| -------- | ---------------------- | ---- | ----------------------------------------------------------------------- |
-| Wallet   | `not_found`            | —    | Wallet extension not detected / not installed                          |
-| Wallet   | `rejected`             | —    | User rejected or cancelled the connection or signing request           |
-| Wallet   | `insufficient_balance` | —    | XLM balance below the minimum (for fees and reserve)                   |
-| Contract | `AlreadyPaid`          | 1    | A member tries to pay a share that has already been paid               |
-| Contract | `NotAMember`           | 2    | The address is not a registered member of that group                  |
-| Contract | `IncorrectAmount`      | 3    | The payment amount does not match the specified share                 |
-| Contract | `GroupNotFound`        | 4    | The submitted Group ID is not found in contract storage                |
-| Contract | `NotOwner`             | 5    | The caller of `update_group`/`delete_group` is not the group owner    |
+🔍 View on Stellar Explorer: `https://stellar.expert/explorer/testnet/tx/<TX_HASH>`
 
 ---
 
-## Smart Contract Testing
+## ⚠️ Error Handling
 
-Unit tests exist to ensure contract reliability, covering both success scenarios and error scenarios (`AlreadyPaid`, `NotAMember`, `IncorrectAmount`, `GroupNotFound`, `NotOwner`).
+| Layer     | Error                    | Code | When it occurs                                                    |
+| ---------- | ------------------------- | ---- | -------------------------------------------------------------------- |
+| Wallet     | `not_found`                | —    | Wallet extension not detected / not installed                        |
+| Wallet     | `rejected`                  | —    | User rejected or cancelled connection or signing                     |
+| Wallet     | `insufficient_balance`      | —    | XLM balance below minimum (fees + reserve)                           |
+| Contract   | `AlreadyPaid`                | 1    | Member tries to pay a share that is already paid                     |
+| Contract   | `NotAMember`                 | 2    | Address is not a registered member of the group                      |
+| Contract   | `IncorrectAmount`             | 3    | Payment amount does not match the assigned share                     |
+| Contract   | `GroupNotFound`               | 4    | Group ID not found in contract storage                               |
+| Contract   | `NotOwner`                     | 5    | Caller of `update_group` / `delete_group` is not the group owner     |
+
+---
+
+## 🧪 Testing
+
+Unit tests cover both success and error scenarios.
 
 ```bash
 cd contracts/splitbill
 cargo test
 ```
 
----
-
-## Smart Contract Functions
-
-| Function                                                    | Description                                       |
-| ------------------------------------------------------------ | --------------------------------------------------- |
-| `create_group(owner, name)`                                  | Creates a new group with a sequential ID           |
-| `update_group(group_id, owner, new_name)`                    | Renames a group (owner only)                       |
-| `delete_group(group_id, owner)`                               | Deletes a group (owner only)                       |
-| `add_member(group_id, owner, member, share_amount)`          | Adds a member along with their bill share          |
-| `pay_share(group_id, member, amount)`                         | Pays a bill share                                  |
-| `get_groups()`                                                | Reads all group data                               |
-| `get_groups_by_member(member_address)`                        | Reads all groups in which an address is registered as a member |
-| `get_members(group_id)`                                       | Reads all members within a group                   |
+Expected output: 4+ passing tests.
 
 ---
 
-## License
+## 📋 Smart Contract Functions
 
-MIT — free to use and develop.
+| Function                                                    | Description                                          |
+| -------------------------------------------------------------- | ------------------------------------------------------- |
+| `create_group(owner, name)`                                     | Creates a new group with a sequential ID               |
+| `update_group(group_id, owner, new_name)`                       | Renames a group (owner only)                            |
+| `delete_group(group_id, owner)`                                  | Deletes a group (owner only)                            |
+| `add_member(group_id, owner, member, share_amount)`             | Adds a member with their bill share                     |
+| `pay_share(group_id, member, amount)`                            | Pays a share, escrowing XLM into the contract            |
+| `settle_group(group_id, owner)`                                  | Owner withdraws all escrowed funds once everyone has paid |
+| `get_groups()`                                                    | Reads all group data                                    |
+| `get_groups_by_member(member_address)`                           | Reads groups where an address is a member                |
+| `get_members(group_id)`                                          | Reads all members of a group                             |
+
+---
+
+## 🖼️ Screenshots
+
+_Add before submitting:_
+
+- Wallet selection modal (multi-wallet support) → `frontend/public/screenshots/wallet-options.png`
+
+---
+
+## 📄 License
+
+MIT — free to use and modify.
 
 ---
 

@@ -2,28 +2,8 @@
 import { useMemo, useState } from "react";
 import CreateGroupModal from "./CreateGroupModal";
 import { IconPlus, IconLogout, IconSearch, IconChevronDown, IconUsers, IconSpinner } from "./Icons";
+import type { Group, Member } from "../App";
 
-// ============================================================
-//  TIPE DATA (sama dengan Dashboard)
-// ============================================================
-export interface Member {
-  address: string;
-  share: number;
-  paid: boolean;
-}
-
-export interface Group {
-  id: string;
-  name: string;
-  owner: string;
-  totalShare: number;
-  members: Member[];
-  settled: boolean; // 🔥 BARU
-}
-
-// ============================================================
-//  PROPS
-// ============================================================
 interface GroupsProps {
   address: string | null;
   groups: Group[];
@@ -32,9 +12,9 @@ interface GroupsProps {
   onDisconnect: () => void;
   onGoHome: () => void;
   onGoActivity: () => void;
-  isLoading?: boolean;        // ← baru
-  error?: string | null;      // ← baru
-  onRefresh?: () => void;     // ← baru
+  isLoading?: boolean;
+  error?: string | null;
+  onRefresh?: () => void;
 }
 
 type Status = "Active" | "Pending" | "Completed";
@@ -56,7 +36,6 @@ export default function Groups({
   const [filter, setFilter] = useState<"All Groups" | Status>("All Groups");
   const [showCreateModal, setShowCreateModal] = useState(false);
 
-  // ===== KOMPUTASI DATA DARI GROUPS PROP =====
   const groupItems = useMemo(() => {
     return groups.map((g) => {
       const totalMembers = g.members.length;
@@ -74,12 +53,13 @@ export default function Groups({
         total: g.totalShare,
         share: yourShare,
         percent,
-        settled: g.settled, // 🔥 ambil dari props
+        settled: g.settled,
+        isRecurring: g.isRecurring,
+        cycle: g.cycle,
       };
     });
   }, [groups]);
 
-  // ===== FILTER & SEARCH =====
   const filtered = useMemo(() => {
     return groupItems.filter((g) => {
       const matchesSearch = g.name.toLowerCase().includes(search.toLowerCase());
@@ -88,7 +68,6 @@ export default function Groups({
     });
   }, [search, filter, groupItems]);
 
-  // ===== HANDLER CREATE GROUP =====
   const handleGroupCreated = (data: { name: string; hash: string }) => {
     const newGroup: Group = {
       id: data.hash,
@@ -96,13 +75,14 @@ export default function Groups({
       owner: address!,
       totalShare: 0,
       members: [],
-      settled: false, // 🔥 default false
+      settled: false,
+      isRecurring: false,
+      cycle: 1,
     };
     onAddGroup(newGroup);
     setShowCreateModal(false);
   };
 
-  // ===== RENDER KONDISI =====
   let content;
   if (isLoading) {
     content = (
@@ -142,7 +122,6 @@ export default function Groups({
               <span className={`status-pill status-${g.status.toLowerCase()}`}>
                 {g.status}
               </span>
-              {/* 🔥 Tampilkan badge Settled jika sudah settled */}
               {g.settled && (
                 <span className="status-pill" style={{ background: 'var(--green)', color: '#fff' }}>
                   ✅ Settled
@@ -188,7 +167,6 @@ export default function Groups({
 
   return (
     <div className="dashboard groups-page">
-      {/* ===== NAVBAR ===== */}
       <header className="navbar dashboard-navbar">
         <div className="brand">
           <div className="brand-icon">
@@ -224,7 +202,6 @@ export default function Groups({
         </div>
       </header>
 
-      {/* ===== HEADER + CONTROLS ===== */}
       <section className="groups-header">
         <div>
           <h1 className="groups-title">Your Groups</h1>
@@ -262,10 +239,8 @@ export default function Groups({
         </div>
       </section>
 
-      {/* ===== CONTENT ===== */}
       {content}
 
-      {/* ===== FOOTER ===== */}
       <footer className="app-footer groups-footer">
         <span className="footer-brand">Built on Stellar Soroban</span>
         <div className="footer-links">
@@ -278,7 +253,6 @@ export default function Groups({
         </div>
       </footer>
 
-      {/* ===== MODAL CREATE GROUP ===== */}
       {showCreateModal && (
         <CreateGroupModal
           address={address}
@@ -286,7 +260,6 @@ export default function Groups({
           onSuccess={handleGroupCreated}
           onViewGroup={() => {
             setShowCreateModal(false);
-            // Optional: navigate to group detail if needed
           }}
         />
       )}
