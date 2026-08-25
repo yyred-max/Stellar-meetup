@@ -63,21 +63,20 @@ export default function Dashboard({
   const userName = address ? address.slice(0, 6) : "Yuli";
 
   // === HANDLER SAAT GROUP BERHASIL DIBUAT ===
-  const handleGroupCreated = (data: { name: string; hash: string; groupId?: string }) => {
+  const handleGroupCreated = (data: { name: string; hash: string; groupId?: string; isRecurring?: boolean }) => {
     const newGroup: Group = {
       id: data.groupId || data.hash,
       name: data.name,
       owner: address!,
       totalShare: 0,
       members: [],
-      settled: false, 
-      isRecurring: false,
-      cycle: 1, 
+      settled: false,
+      isRecurring: data.isRecurring ?? false,
+      cycle: 1,
     };
     onAddGroup(newGroup);
     setShowCreateModal(false);
   };
-
   // Ambil 5 aktivitas terbaru
   const recentActivities = activities.slice(0, 5);
 
@@ -247,7 +246,7 @@ export default function Dashboard({
           onSuccess={handleGroupCreated}
           onCreateGroup={async (data) => {
             if (!address) throw new Error("Wallet not connected");
-            const result = await createGroup(address, data.name);
+            const result = await createGroup(address, data.name, data.isRecurring ?? false);
             return { hash: result.hash, result: result.result };
           }}
           onViewGroup={() => {

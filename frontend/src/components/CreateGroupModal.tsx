@@ -18,15 +18,16 @@ interface CreateGroupModalProps {
   /**
    * Dipanggil setelah transaksi berhasil, sebelum modal menampilkan success.
    * Cocok untuk menyimpan grup ke state di komponen induk.
-   * Sekarang juga menerima groupId yang dikembalikan kontrak.
+   * Sekarang juga menerima groupId dan isRecurring dari kontrak.
    */
-  onSuccess?: (data: { name: string; hash: string; groupId?: string }) => void;
+  onSuccess?: (data: { name: string; hash: string; groupId?: string; isRecurring?: boolean }) => void;
   onActivityAdd?: (activity: Omit<Activity, "id" | "timestamp">) => void;
   /**
    * 🔥 Fungsi untuk memanggil kontrak Soroban yang sebenarnya.
    * Diharapkan mengembalikan { hash, result } di mana result berisi return value kontrak.
+   * Menerima isRecurring sebagai parameter ketiga.
    */
-  onCreateGroup?: (data: { name: string; description: string }) => Promise<{ hash: string; result?: any }>;
+  onCreateGroup?: (data: { name: string; description: string; isRecurring: boolean }) => Promise<{ hash: string; result?: any }>;
 }
 
 type Step = "form" | "processing" | "success";
@@ -61,6 +62,8 @@ export default function CreateGroupModal({
   const [description, setDescription] = useState("");
   const [txHash, setTxHash] = useState("");
   const [copied, setCopied] = useState(false);
+  // 🔥 State untuk recurring
+  const [isRecurring, setIsRecurring] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -73,7 +76,7 @@ export default function CreateGroupModal({
 
     try {
       const result = await (onCreateGroup
-        ? onCreateGroup({ name, description })
+        ? onCreateGroup({ name, description, isRecurring })
         : simulateCreateGroup());
 
       setSubStep(2);
@@ -91,7 +94,8 @@ export default function CreateGroupModal({
         groupId = result.hash; // fallback
       }
 
-      onSuccess?.({ name, hash: result.hash, groupId });
+      // ✅ Kirim isRecurring ke onSuccess
+      onSuccess?.({ name, hash: result.hash, groupId, isRecurring });
 
       onActivityAdd?.({
         type: "group_created",
@@ -148,6 +152,19 @@ export default function CreateGroupModal({
                 onChange={(e) => setDescription(e.target.value)}
                 rows={3}
               />
+
+              {/* 🔥 Checkbox Recurring */}
+              <div className="field-label-row" style={{ marginTop: 20 }}>
+                <label className="field-label" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={isRecurring}
+                    onChange={(e) => setIsRecurring(e.target.checked)}
+                    style={{ width: '18px', height: '18px', accentColor: 'var(--purple)' }}
+                  />
+                  <span>Recurring monthly (for kos-kosan / rent)</span>
+                </label>
+              </div>
 
               <div className="owner-card">
                 <div className="owner-card-top">
