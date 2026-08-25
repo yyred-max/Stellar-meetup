@@ -12,7 +12,7 @@ import {
 import { kit } from "./wallet";
 import { Group, Member } from "../App";
 
-export const CONTRACT_ID = "CA7L7QWGLBGGDL2OLTJVJRKJ5UBUMEUIZRIE2FMCGAR2QFATO4L7CMG3";
+export const CONTRACT_ID = "CA3JUJQLP2AEVMGCEOGG6SN5HJT45YPHMBTQ4HSYRK2FQ73WJXS3IQMH";
 export const RPC_URL = "https://soroban-testnet.stellar.org";
 export const server = new rpc.Server(RPC_URL);
 const contract = new Contract(CONTRACT_ID);

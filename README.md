@@ -154,9 +154,9 @@ Open `http://localhost:5173`, or try the [live demo](https://stellar-meetup.verc
 ## 📜 Deployed Contract
 
 **Contract address (testnet):**
-`CA7L7QWGLBGGDL2OLTJVJRKJ5UBUMEUIZRIE2FMCGAR2QFATO4L7CMG3`
+`CA3JUJQLP2AEVMGCEOGG6SN5HJT45YPHMBTQ4HSYRK2FQ73WJXS3IQMH`
 
-🔍 [View on Stellar Lab](https://lab.stellar.org/r/testnet/contract/CA7L7QWGLBGGDL2OLTJVJRKJ5UBUMEUIZRIE2FMCGAR2QFATO4L7CMG3)
+🔍 [View on Stellar Lab](https://lab.stellar.org/r/testnet/contract/CA3JUJQLP2AEVMGCEOGG6SN5HJT45YPHMBTQ4HSYRK2FQ73WJXS3IQMH)
 
 ---
 

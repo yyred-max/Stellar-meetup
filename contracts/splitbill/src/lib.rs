@@ -1,7 +1,3 @@
-// ============================================================
-// lib.rs — Final (tambahkan pengecekan settled di add_member)
-// ============================================================
-
 #![no_std]
 
 use soroban_sdk::{
@@ -18,6 +14,8 @@ pub struct Group {
     pub total_members: u32,
     pub members_paid: u32,
     pub settled: bool,
+    pub is_recurring: bool,   // ⬅️ BARU
+    pub cycle: u32,           // ⬅️ BARU
 }
 
 #[contracttype]
@@ -63,7 +61,8 @@ impl SplitBillContract {
             .unwrap_or(Vec::new(&env))
     }
 
-    pub fn create_group(env: Env, owner: Address, name: String) -> Group {
+    // 🔥 create_group sekarang menerima 3 argumen: owner, name, is_recurring
+    pub fn create_group(env: Env, owner: Address, name: String, is_recurring: bool) -> Group {
         owner.require_auth();
 
         let mut groups: Vec<Group> = env
@@ -85,6 +84,8 @@ impl SplitBillContract {
             total_members: 0,
             members_paid: 0,
             settled: false,
+            is_recurring,
+            cycle: 1,   // semua grup mulai dari cycle 1
         };
 
         groups.push_back(group.clone());
@@ -166,7 +167,6 @@ impl SplitBillContract {
 
         Ok(String::from_str(&env, "Member berhasil ditambahkan"))
     }
-
 
     // ============================================================
     // pay_share — transfer XLM dari member ke KONTRAK (escrow)
