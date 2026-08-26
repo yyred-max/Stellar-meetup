@@ -2,6 +2,7 @@
 import { useState } from "react";
 import AddMemberModal from "./AddMemberModal";
 import PayShareModal from "./PayShareModal";
+import { truncateHash } from "../utils/format";
 import { IconPlus, IconLogout, IconUsers, IconCheck, IconCreditCard } from "./Icons";
 import type { Group, Member, Activity } from "../App"; // ✅ hanya import dari App
 import { addMember, payShare, updateGroup, deleteGroup, settleGroup } from "../lib/contract";
@@ -172,10 +173,11 @@ export default function GroupDetail({
       console.log("💰 Settling group:", { groupId: groupId.toString(), owner: address });
       const result = await settleGroup(groupId, address);
       console.log("✅ Settle result:", result);
+      const amount = result?.result ?? 0;
       onActivityAdd?.({
         type: 'share_paid',
         title: `Group "${group.name}" settled`,
-        description: `Total collected: ${result} XLM`,
+        description: `Total collected: ${amount} XLM • Tx: ${truncateHash(result?.hash ?? '')}`,
       });
       onSettled(group.id);
       if (onRefresh) onRefresh();

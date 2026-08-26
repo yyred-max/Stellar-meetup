@@ -177,6 +177,10 @@ Open `http://localhost:5173`, or try the [live demo](https://stellar-meetup.verc
 
 🔍 [View on Stellar Explorer](https://stellar.expert/explorer/testnet/tx/34ac8faeea93278c4c35f2e50d61f28fe777be3145bc9b3a0540a745c740c2fa)
 
+**Transaction hash (`settle_group`):**
+`34ac8faeea93278c4c35f2e50d61f28fe777be3145bc9b3a0540a745c740c2fa`
+
+🔍 [View on Stellar Explorer](https://stellar.expert/explorer/testnet/tx/34ac8faeea93278c4c35f2e50d61f28fe777be3145bc9b3a0540a745c740c2fa)
 
 
 

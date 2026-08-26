@@ -9,6 +9,7 @@ import {
 } from "./Icons";
 import type { Member } from "../App"; // ✅ import dari App, bukan Groups
 import type { Activity } from "../App";
+import { truncateHash } from "../utils/format";
 
 interface AddMemberModalProps {
   groupName: string;
@@ -84,7 +85,7 @@ export default function AddMemberModal({
       onActivityAdd?.({
         type: 'member_added',
         title: `You added ${shortAddr(walletAddress)} to ${groupName}`,
-        description: `Share: ${shareValue} XLM • Transaction: ${result.hash}`,
+        description: `Share: ${shareValue} XLM • Tx: ${truncateHash(result.hash)}`,
       });
 
       setStep("success");
