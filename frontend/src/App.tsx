@@ -6,7 +6,7 @@ import Groups from "./components/Groups";
 import ActivityPage from "./components/Activity";
 import GroupDetail from "./components/GroupDetail";
 import { getGroups, getGroupsByMember, getMembers, server, CONTRACT_ID } from "./lib/contract";
-import { scValToNative } from "@stellar/stellar-sdk"; // 🔥 import fungsi konversi
+import { scValToNative } from "@stellar/stellar-sdk";
 import {
   IconWallet,
   IconCheck,
@@ -19,6 +19,14 @@ import {
   IconUser,
 } from "./components/Icons";
 import "./App.css";
+
+// ============================================
+//  UTILITY: Potong hash agar tidak melebar
+// ============================================
+export function truncateHash(hash: string, start: number = 10, end: number = 6): string {
+  if (!hash || hash.length <= start + end) return hash;
+  return `${hash.slice(0, start)}...${hash.slice(-end)}`;
+}
 
 // ============================================
 //  TIPE DATA
@@ -76,7 +84,7 @@ function App() {
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [activities, setActivities] = useState<Activity[]>([]);
 
-  // ===== FUNGSI FETCH EVENT DARI BLOCKCHAIN (sudah diperbaiki) =====
+  // ===== FUNGSI FETCH EVENT DARI BLOCKCHAIN =====
   const fetchEvents = async (addr: string) => {
     if (!addr) return;
     try {
@@ -95,7 +103,6 @@ function App() {
       let latestLedger = savedLedger;
 
       response.events.forEach((ev) => {
-        // 🔥 Konversi ScVal → native JS
         const topic = scValToNative(ev.topic[0]) as string;
         const value = scValToNative(ev.value);
 
@@ -301,7 +308,7 @@ function App() {
       addActivity({
         type: 'member_added',
         title: `You added ${member.address.slice(0,6)}...${member.address.slice(-4)} to ${group.name}`,
-        description: `Share: ${member.share} XLM`,
+        description: `Share: ${member.share} XLM`, // ✅ perbaiki
       });
     }
   };

@@ -162,10 +162,24 @@ Open `http://localhost:5173`, or try the [live demo](https://stellar-meetup.verc
 
 ## 🔁 Example Transaction
 
-**Transaction hash (`create_group`):**
-`<TODO: paste a recent tx hash from the currently deployed contract>`
+**Transaction hash (`add_member`):**  
+`55a1ef57521db2f8c624d564c7d4815aaf59a7d9e02e5d49dbfcccf2484d21c8`
 
-🔍 View on Stellar Explorer: `https://stellar.expert/explorer/testnet/tx/<TX_HASH>`
+🔍 [View on Stellar Explorer](https://stellar.expert/explorer/testnet/tx/55a1ef57521db2f8c624d564c7d4815aaf59a7d9e02e5d49dbfcccf2484d21c8)
+
+**Transaction hash (`pay_share`):**  
+`0b483b8e79f4bc4e9d67fa47fba0d1620d25e09f702e0076cdaa3517edb1ae6f`
+
+🔍 [View on Stellar Explorer](https://stellar.expert/explorer/0b483b8e79f4bc4e9d67fa47fba0d1620d25e09f702e0076cdaa3517edb1ae6f)
+
+**Transaction hash (`settle_group`):**
+`34ac8faeea93278c4c35f2e50d61f28fe777be3145bc9b3a0540a745c740c2fa`
+
+🔍 [View on Stellar Explorer](https://stellar.expert/explorer/testnet/tx/34ac8faeea93278c4c35f2e50d61f28fe777be3145bc9b3a0540a745c740c2fa)
+
+
+
+
 
 ---
 

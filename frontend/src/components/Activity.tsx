@@ -11,6 +11,7 @@ import {
   IconUserPlus,
 } from "./Icons";
 import type { Activity } from "../App";
+import { truncateHash } from "../utils/format";
 
 interface ActivityProps {
   address: string | null;
@@ -157,14 +158,18 @@ export default function Activity({
                 <span className="date-bar" /> {date}
               </p>
               <div className="activity-card">
-                {items.map((a) => {
+              {items.map((a) => {
                   const { icon, className } = iconFor(a.type);
                   return (
                     <div className="activity-row" key={a.id}>
                       <span className={`activity-row-icon ${className}`}>{icon}</span>
                       <div className="activity-row-body">
                         <p className="activity-row-text">{a.title}</p>
-                        {a.description && <p className="activity-row-hash">{a.description}</p>}
+                        {a.description && (
+                          <p className="activity-row-hash">
+                            {truncateHash(a.description)}
+                          </p>
+                        )}
                       </div>
                       <span className="activity-row-time">
                         {new Date(a.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}

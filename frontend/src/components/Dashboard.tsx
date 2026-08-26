@@ -8,6 +8,7 @@ import {
   IconUserPlus,
 } from "./Icons";
 import { createGroup } from "../lib/contract";
+import { truncateHash } from "../utils/format";
 import type { Activity, Group, Member } from "../App"; // 🔥 import dari App
 
 // ============================================================
@@ -227,8 +228,12 @@ export default function Dashboard({
                   <div>
                     <p className="activity-title">{a.title}</p>
                     <p className="activity-sub">
-                      {a.description && `${a.description} • `}
-                      {new Date(a.timestamp).toLocaleTimeString()}
+                    {a.description && a.description.includes('Transaction:')
+                          ? a.description.replace(/Transaction: /, '') 
+                          : a.description}
+                        {a.description?.includes('Transaction:') && (
+                          <span> • {truncateHash(a.description.replace(/Transaction: /, ''))}</span>
+                        )}
                     </p>
                   </div>
                 </div>
