@@ -162,28 +162,12 @@ Open `http://localhost:5173`, or try the [live demo](https://stellar-meetup.verc
 
 ## 🔁 Example Transaction
 
-**Transaction hash (`add_member`):**  
-`55a1ef57521db2f8c624d564c7d4815aaf59a7d9e02e5d49dbfcccf2484d21c8`
-
-🔍 [View on Stellar Explorer](https://stellar.expert/explorer/testnet/tx/55a1ef57521db2f8c624d564c7d4815aaf59a7d9e02e5d49dbfcccf2484d21c8)
-
-**Transaction hash (`pay_share`):**  
-`0b483b8e79f4bc4e9d67fa47fba0d1620d25e09f702e0076cdaa3517edb1ae6f`
-
-🔍 [View on Stellar Explorer](https://stellar.expert/explorer/0b483b8e79f4bc4e9d67fa47fba0d1620d25e09f702e0076cdaa3517edb1ae6f)
-
-**Transaction hash (`settle_group`):**
-`34ac8faeea93278c4c35f2e50d61f28fe777be3145bc9b3a0540a745c740c2fa`
-
-🔍 [View on Stellar Explorer](https://stellar.expert/explorer/testnet/tx/34ac8faeea93278c4c35f2e50d61f28fe777be3145bc9b3a0540a745c740c2fa)
-
-**Transaction hash (`settle_group`):**
-`34ac8faeea93278c4c35f2e50d61f28fe777be3145bc9b3a0540a745c740c2fa`
-
-🔍 [View on Stellar Explorer](https://stellar.expert/explorer/testnet/tx/34ac8faeea93278c4c35f2e50d61f28fe777be3145bc9b3a0540a745c740c2fa)
-
-
-
+| Function | Transaction Hash | Stellar Explorer |
+|--------|------------------|------------------|
+| `create_group` | `f51be9e084e6b14509e3c3315a79091ed0073b5520baa3cda258a4b28b60f660` | [View](https://stellar.expert/explorer/testnet/tx/f51be9e084e6b14509e3c3315a79091ed0073b5520baa3cda258a4b28b60f660) |
+| `add_member` | `55a1ef57521db2f8c624d564c7d4815aaf59a7d9e02e5d49dbfcccf2484d21c8` | [View](https://stellar.expert/explorer/testnet/tx/55a1ef57521db2f8c624d564c7d4815aaf59a7d9e02e5d49dbfcccf2484d21c8) |
+| `pay_share` | `0b483b8e79f4bc4e9d67fa47fba0d1620d25e09f702e0076cdaa3517edb1ae6f` | [View](https://stellar.expert/explorer/testnet/tx/0b483b8e79f4bc4e9d67fa47fba0d1620d25e09f702e0076cdaa3517edb1ae6f) |
+| `settle_group` | `34ac8faeea93278c4c35f2e50d61f28fe777be3145bc9b3a0540a745c740c2fa` | [View](https://stellar.expert/explorer/testnet/tx/34ac8faeea93278c4c35f2e50d61f28fe777be3145bc9b3a0540a745c740c2fa) |
 
 ---
 
