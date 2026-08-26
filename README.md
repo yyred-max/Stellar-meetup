@@ -11,7 +11,7 @@
 | Requirement                     | Status                                                                              |
 | -------------------------------- | ------------------------------------------------------------------------------------ |
 | Custom error types handled       | ✅ `AlreadyPaid`, `NotAMember`, `IncorrectAmount`, `GroupNotFound`, `NotOwner` (5 types) |
-| Contract deployed on testnet      | ✅ `CA7L7QWGLBGGDL2OLTJVJRKJ5UBUMEUIZRIE2FMCGAR2QFATO4L7CMG3`                          |
+| Contract deployed on testnet      | ✅ `CA3JUJQLP2AEVMGCEOGG6SN5HJT45YPHMBTQ4HSYRK2FQ73WJXS3IQMH`                          |
 | Contract called from frontend     | ✅ `createGroup`, `addMember`, `payShare`, `updateGroup`, `deleteGroup`, `settleGroup` |
 | Transaction status visible        | ✅ Modal with processing → success/fail feedback                                      |
 | 10+ meaningful commits            | ✅ 20+ commits (feat, fix, refactor, docs)                                             |
