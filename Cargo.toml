@@ -5,7 +5,7 @@ members = [
 ]
 
 [workspace.dependencies]
-soroban-sdk = "21.0.0"
+soroban-sdk = "20.5.0"
 ethnum = "1.5.3"           
 ed25519-dalek = "2.2.0"
 rand_chacha = "0.3.1"
